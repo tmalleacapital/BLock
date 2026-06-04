@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+
+# Node
+plataforma-bloqueo/node_modules/
+plataforma-bloqueo/.next/
+plataforma-bloqueo/.env*
+
+# Claude internal
+.claude/
+
+# OS
+Thumbs.db
+.DS_Store

@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* ── Semantic color tokens ── */
+:root {
+  --background: #F6F4EF;
+  --foreground: #1A1816;
+  --card: #FFFFFF;
+  --muted: #8A8784;
+  --border: #E4E0D8;
+  --accent: #0E5C54;
+  --accent-hover: #0A4840;
+  --danger: #B91C1C;
+  --success: #166534;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+
+  --font-display: var(--font-fraunces);
+  --font-body: var(--font-hanken);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-hanken), system-ui, sans-serif;
+}
