@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getSchema, INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 import FichaForm from '@/components/FichaForm';
-import type { UnidadEntry } from '@/lib/inmobiliarias/ecasa/catalogos';
+import type { UnidadEntry } from '@/lib/inmobiliarias/types';
 
 interface Props {
   params: Promise<{ key: string }>;
@@ -20,8 +20,8 @@ export default async function InmobiliariaPage({ params }: Props) {
 
   let stockData: Record<string, UnidadEntry[]> | undefined;
   if (key === 'ecasa') {
-    const { STOCK } = await import('@/lib/inmobiliarias/ecasa/catalogos');
-    stockData = STOCK;
+    const { fetchEcasaStock } = await import('@/lib/inmobiliarias/ecasa/stock');
+    stockData = await fetchEcasaStock();
   }
 
   return (

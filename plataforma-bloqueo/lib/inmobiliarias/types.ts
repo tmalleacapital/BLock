@@ -1,5 +1,10 @@
 export type FieldType = 'text' | 'rut' | 'email' | 'phone' | 'select' | 'cascade-parent' | 'cascade-child' | 'cascade-auto';
 
+export interface UnidadEntry {
+  unidad: string;
+  tipologia: string;
+}
+
 export interface SelectOption {
   value: string;
   label: string;

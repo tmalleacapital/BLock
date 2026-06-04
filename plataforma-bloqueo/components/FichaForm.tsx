@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { FieldDef, FieldSchema, RunResult } from '@/lib/inmobiliarias/types';
-import type { UnidadEntry } from '@/lib/inmobiliarias/ecasa/catalogos';
+import type { FieldDef, FieldSchema, RunResult, UnidadEntry } from '@/lib/inmobiliarias/types';
 
 interface FichaFormProps {
   inmobiliariaKey: string;
