@@ -163,7 +163,7 @@ def bloquear_cliente(data: dict) -> dict:
 
             # Esperar que las opciones de #sexo carguen vía AJAX
             f.wait_for_function(
-                "() => (document.querySelector('#sexo')?.options.length ?? 0) > 1",
+                "() => (document.querySelector('#sexo')?.options?.length ?? 0) > 1",
                 timeout=10_000,
             )
             sexo_input = data.get("sexo", "M")
@@ -189,7 +189,7 @@ def bloquear_cliente(data: dict) -> dict:
             # ── 7. Región → esperar carga de comunas → seleccionar ─────────────
             f.select_option("#region", data.get("region", ""))
             f.wait_for_function(
-                "() => (document.querySelector('#comuna')?.options.length ?? 0) > 1",
+                "() => (document.querySelector('#comuna')?.options?.length ?? 0) > 1",
                 timeout=10_000,
             )
 
@@ -219,7 +219,7 @@ def bloquear_cliente(data: dict) -> dict:
 
             # Esperar que el AJAX cargue #mediollegada con las opciones de broker
             f.wait_for_function(
-                "() => (document.querySelector('#mediollegada')?.options.length ?? 0) > 1",
+                "() => (document.querySelector('#mediollegada')?.options?.length ?? 0) > 1",
                 timeout=10_000,
             )
             f.select_option("#mediollegada", "101")   # CAPITAL INTELIGENTE
@@ -253,7 +253,7 @@ def bloquear_cliente(data: dict) -> dict:
             # ── 12. Proyecto → CONCEPTO SMART LA FLORIDA ──────────────────────
             f2.select_option("#proyecto", "50|501")
             f2.wait_for_function(
-                "() => (document.querySelector('#modelo')?.options.length ?? 0) > 1",
+                "() => (document.querySelector('#modelo')?.options?.length ?? 0) > 1",
                 timeout=10_000,
             )
 
@@ -263,7 +263,7 @@ def bloquear_cliente(data: dict) -> dict:
             )
             f2.select_option("#modelo", modelo_val)
             f2.wait_for_function(
-                "() => (document.querySelector('#orientacion')?.options.length ?? 0) > 1",
+                "() => (document.querySelector('#orientacion')?.options?.length ?? 0) > 1",
                 timeout=10_000,
             )
 
@@ -273,7 +273,7 @@ def bloquear_cliente(data: dict) -> dict:
             )
             f2.select_option("#orientacion", orientacion_val)
             f2.wait_for_function(
-                "() => (document.querySelector('#producto')?.options.length ?? 0) > 1",
+                "() => (document.querySelector('#producto')?.options?.length ?? 0) > 1",
                 timeout=10_000,
             )
 
