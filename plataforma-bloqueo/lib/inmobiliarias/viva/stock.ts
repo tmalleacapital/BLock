@@ -1,6 +1,6 @@
 import type { UnidadEntry } from '../types';
 
-const INMOBILIARIA_ID = 12;
+const INMOBILIARIA_ID = 31;
 const ORED_URL = 'https://ored.cl/api/public/stock/disponibles';
 
 interface OredRow {
