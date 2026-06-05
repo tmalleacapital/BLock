@@ -25,6 +25,9 @@ export default async function InmobiliariaPage({ params }: Props) {
   } else if (key === 'paz') {
     const { fetchPazStock } = await import('@/lib/inmobiliarias/paz/stock');
     stockData = await fetchPazStock();
+  } else if (key === 'sento') {
+    const { fetchSentoStock } = await import('@/lib/inmobiliarias/sento/stock');
+    stockData = await fetchSentoStock();
   }
 
   return (

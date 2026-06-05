@@ -10,10 +10,25 @@ import json
 import datetime
 import smtplib
 import io
+import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from PIL import Image
+
+
+def _load_dotenv() -> None:
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    if not os.path.exists(env_file):
+        return
+    with open(env_file, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
+_load_dotenv()
 
 LOGO_PATH = r"C:\Users\vpedrero\Downloads\Logo-Capital-Inteligente.webp"
 
@@ -35,8 +50,8 @@ FIRMA_HTML = """
 </table>
 """
 
-GMAIL_USER    = "soporte.comercial@capitalinteligente.cl"
-GMAIL_PASS    = "nwgmxzvfoeaqmrxq"
+GMAIL_USER    = os.environ['GMAIL_USER']
+GMAIL_PASS    = os.environ['GMAIL_PASS']
 DESTINATARIOS = ["issys.ferrer@pazcorp.cl", "fernando.florindo@pazcorp.cl"]
 
 LABELS = {

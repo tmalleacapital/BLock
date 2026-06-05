@@ -18,14 +18,29 @@ Uso desde otro script (JSON por stdin):
 import sys
 import json
 import time
+import os
 from playwright.sync_api import sync_playwright, Page, Frame
+
+
+def _load_dotenv() -> None:
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    if not os.path.exists(env_file):
+        return
+    with open(env_file, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
+_load_dotenv()
 
 # ── Credenciales del portal ────────────────────────────────────────────────────
 URL_PANEL = "http://cubit.cl/imagina/Panel.aspx"
 CREDS = {
-    "cuenta": "OPERACIONES",
-    "dominio": "CAPITALINTELIGENTE.CL",
-    "clave": "3268",
+    "cuenta":  os.environ['IMAGINA_CUENTA'],
+    "dominio": os.environ['IMAGINA_DOMINIO'],
+    "clave":   os.environ['IMAGINA_CLAVE'],
 }
 
 

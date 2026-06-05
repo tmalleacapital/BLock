@@ -21,7 +21,7 @@ export interface InmobiliariaEntry {
 export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'imagina',         name: 'Imagina',          enabled: true, active: true  },
   { key: 'ingevec',         name: 'Ingevec',          enabled: true, active: false },
-  { key: 'sento',           name: 'Sento',            enabled: true, active: false },
+  { key: 'sento',           name: 'Sento',            enabled: true, active: true  },
   { key: 'larrain-prieto',  name: 'Larraín Prieto',   enabled: true, active: false },
   { key: 'vicuna-mackenna', name: 'Vicuña Mackenna',  enabled: true, active: false },
   { key: 'euro',            name: 'Euro',             enabled: true, active: true  },

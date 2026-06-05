@@ -10,12 +10,27 @@ import sys
 import json
 import datetime
 import unicodedata
+import os
 from playwright.sync_api import sync_playwright, Page
+
+
+def _load_dotenv() -> None:
+    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    if not os.path.exists(env_file):
+        return
+    with open(env_file, encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
+_load_dotenv()
 
 URL_LOGIN = "https://euro.mobysuite.com/login"
 CREDS = {
-    "usuario": "capitalinteligentespa",
-    "clave":   "Jerez2024*",
+    "usuario": os.environ['EURO_USER'],
+    "clave":   os.environ['EURO_PASS'],
 }
 
 
