@@ -151,6 +151,11 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
   const [result, setResult] = useState<RunResult | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const handleReset = () => {
+    setValues({});
+    setResult(null);
+  };
+
   const handleChange = useCallback((key: string, value: string) => {
     setValues((prev) => {
       const next = { ...prev, [key]: value };
@@ -341,6 +346,20 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
             <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
               {result.message}
             </p>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="mt-1 w-full rounded-xl py-2.5 text-sm font-semibold transition-colors"
+              style={{ backgroundColor: 'var(--success)', color: '#fff' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.opacity = '1';
+              }}
+            >
+              Bloquear otro cliente
+            </button>
           </div>
         ) : (
           <div

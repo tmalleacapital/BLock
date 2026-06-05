@@ -96,7 +96,10 @@ export default function HomePage() {
   const [history, setHistory] = useState<BlockingRecord[]>([]);
 
   useEffect(() => {
-    setHistory(getHistory());
+    const refresh = () => setHistory(getHistory());
+    refresh();
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
   }, []);
 
   const countToday = history.filter((r) => isToday(r.fecha)).length;
