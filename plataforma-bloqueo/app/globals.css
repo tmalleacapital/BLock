@@ -2,15 +2,15 @@
 
 /* ── Semantic color tokens ── */
 :root {
-  --background: #F6F4EF;
-  --foreground: #1A1816;
+  --background: #F1F5F9;
+  --foreground: #0F172A;
   --card: #FFFFFF;
-  --muted: #8A8784;
-  --border: #E4E0D8;
-  --accent: #0E5C54;
-  --accent-hover: #0A4840;
-  --danger: #B91C1C;
-  --success: #166534;
+  --muted: #64748B;
+  --border: #E2E8F0;
+  --accent: #6366F1;
+  --accent-hover: #4F46E5;
+  --danger: #DC2626;
+  --success: #16A34A;
 }
 
 @theme inline {

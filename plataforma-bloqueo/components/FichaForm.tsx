@@ -17,19 +17,21 @@ const GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Proyecto',  keys: ['proyecto', 'unidad', 'tipologia'] },
 ];
 
+const cardShadow = '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)';
+
 const inputBase = [
-  'w-full rounded-lg border px-3 py-2 text-sm transition-colors',
+  'w-full rounded-lg border px-3.5 py-2.5 text-sm transition-colors',
   'focus:outline-none focus:ring-2',
   'placeholder:text-[color:var(--muted)]',
 ].join(' ');
 
-const inputStyle = {
+const inputNormal = {
   borderColor: 'var(--border)',
-  backgroundColor: 'var(--background)',
+  backgroundColor: '#ffffff',
   color: 'var(--foreground)',
 };
 
-const inputFocusRing = 'focus:ring-[color:color-mix(in_srgb,var(--accent)_35%,transparent)] focus:border-[color:var(--accent)]';
+const inputFocusRing = 'focus:ring-[color:color-mix(in_srgb,var(--accent)_22%,transparent)] focus:border-[color:var(--accent)]';
 
 function FieldInput({
   field,
@@ -54,7 +56,7 @@ function FieldInput({
         value={value}
         onChange={(e) => onChange(field.key, e.target.value)}
         className={`${cls} cursor-pointer`}
-        style={{ ...inputStyle, color: value ? 'var(--foreground)' : 'var(--muted)' }}
+        style={{ ...inputNormal, color: value ? 'var(--foreground)' : 'var(--muted)' }}
       >
         <option value="">Selecciona proyecto…</option>
         {proyectos.map((p) => (
@@ -73,7 +75,7 @@ function FieldInput({
         onChange={(e) => onChange(field.key, e.target.value)}
         disabled={!parentValue}
         className={`${cls} cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed`}
-        style={{ ...inputStyle, color: value ? 'var(--foreground)' : 'var(--muted)' }}
+        style={{ ...inputNormal, color: value ? 'var(--foreground)' : 'var(--muted)' }}
       >
         <option value="">{parentValue ? 'Selecciona unidad…' : 'Primero elige un proyecto'}</option>
         {unidades.map((u) => (
@@ -91,8 +93,8 @@ function FieldInput({
         readOnly
         value={value}
         placeholder="Se completa automáticamente"
-        className={`${cls} opacity-70 cursor-default`}
-        style={{ ...inputStyle, backgroundColor: 'color-mix(in srgb, var(--border) 30%, var(--background))' }}
+        className={`${cls} opacity-60 cursor-default`}
+        style={{ ...inputNormal, backgroundColor: '#f8fafc' }}
       />
     );
   }
@@ -104,7 +106,7 @@ function FieldInput({
         value={value}
         onChange={(e) => onChange(field.key, e.target.value)}
         className={`${cls} cursor-pointer`}
-        style={{ ...inputStyle, color: value ? 'var(--foreground)' : 'var(--muted)' }}
+        style={{ ...inputNormal, color: value ? 'var(--foreground)' : 'var(--muted)' }}
       >
         <option value="">Selecciona…</option>
         {field.options?.map((opt) => (
@@ -128,8 +130,17 @@ function FieldInput({
       value={value}
       onChange={(e) => onChange(field.key, e.target.value)}
       className={cls}
-      style={inputStyle}
+      style={inputNormal}
     />
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
   );
 }
 
@@ -141,12 +152,10 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
   const handleChange = useCallback((key: string, value: string) => {
     setValues((prev) => {
       const next = { ...prev, [key]: value };
-      // Cascade: al cambiar proyecto limpiar unidad y tipología
       if (key === 'proyecto') {
         next.unidad    = '';
         next.tipologia = '';
       }
-      // Cascade: al cambiar unidad auto-rellenar tipología
       if (key === 'unidad' && stockData) {
         const proyecto = prev.proyecto ?? '';
         const entry = stockData[proyecto]?.find((u) => u.unidad === value);
@@ -185,22 +194,31 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
     <div className="flex flex-col xl:flex-row gap-6 items-start animate-in fade-in slide-in-from-bottom-3 duration-400">
 
       {/* ── Formulario ── */}
-      <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-5">
+      <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-4">
         {GROUPS.map((group) => {
           const fields = group.keys.map((k) => fieldMap[k]).filter(Boolean);
           if (fields.length === 0) return null;
           return (
             <section
               key={group.label}
-              className="rounded-xl border p-6"
-              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+              className="rounded-2xl border p-6"
+              style={{
+                borderColor: 'var(--border)',
+                backgroundColor: 'var(--card)',
+                boxShadow: cardShadow,
+              }}
             >
-              <h2
-                className="text-xs font-semibold uppercase tracking-widest mb-4"
-                style={{ color: 'var(--muted)' }}
-              >
-                {group.label}
-              </h2>
+              {/* Section header */}
+              <div className="flex items-center gap-2.5 mb-5">
+                <span
+                  className="w-1 h-5 rounded-full shrink-0"
+                  style={{ backgroundColor: 'var(--accent)' }}
+                />
+                <h2 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                  {group.label}
+                </h2>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {fields.map((field) => {
                   const isWide = field.key === 'region' || field.key === 'nombres' || field.key === 'profesion';
@@ -208,12 +226,12 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
                     <div key={field.key} className={isWide ? 'sm:col-span-2' : ''}>
                       <label
                         htmlFor={field.key}
-                        className="block text-sm font-medium mb-1.5"
-                        style={{ color: 'var(--foreground)' }}
+                        className="block text-xs font-semibold mb-1.5 uppercase tracking-wide"
+                        style={{ color: 'var(--muted)' }}
                       >
                         {field.label}
                         {field.required && (
-                          <span className="ml-0.5" style={{ color: 'var(--danger)' }} aria-hidden>
+                          <span className="ml-0.5 normal-case tracking-normal" style={{ color: 'var(--danger)' }} aria-hidden>
                             *
                           </span>
                         )}
@@ -239,19 +257,25 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
         })}
 
         {/* ── Acción ── */}
-        <div className="flex items-center gap-3 pt-1">
+        <div className="flex items-center gap-4 pt-1">
           <button
             type="submit"
             disabled={!allFilled || loading}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-colors focus:outline-none focus:ring-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2.5 px-8 py-3 rounded-xl text-sm font-semibold transition-all focus:outline-none focus:ring-2 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: 'var(--accent)',
               color: '#fff',
+              boxShadow: allFilled && !loading ? '0 4px 14px 0 color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
               // @ts-expect-error CSS custom property
               '--tw-ring-color': 'color-mix(in srgb, var(--accent) 40%, transparent)',
             }}
-            onMouseEnter={(e) => { if (!loading && allFilled) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent-hover)'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent)'; }}
+            onMouseEnter={(e) => {
+              if (!loading && allFilled)
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent-hover)';
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent)';
+            }}
           >
             {loading ? (
               <>
@@ -259,7 +283,14 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
                 Procesando…
               </>
             ) : (
-              'Bloquear cliente'
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/>
+                  <path d="M7 11V7a5 5 0 0110 0v4"/>
+                </svg>
+                Bloquear cliente
+              </>
             )}
           </button>
 
@@ -271,20 +302,27 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
         </div>
       </form>
 
-      {/* ── Panel lateral de resultado ── */}
+      {/* ── Panel lateral ── */}
       <aside className="w-full xl:w-72 shrink-0 space-y-4">
+
         {/* Estado */}
         {result?.status === 'success' ? (
           <div
-            className="rounded-xl border-2 p-6 flex flex-col items-center text-center gap-3 animate-in fade-in zoom-in-95 duration-300"
-            style={{ borderColor: 'var(--success)', backgroundColor: 'color-mix(in srgb, var(--success) 10%, var(--card))' }}
+            className="rounded-2xl border-2 p-6 flex flex-col items-center text-center gap-3 animate-in fade-in zoom-in-95 duration-300"
+            style={{
+              borderColor: 'var(--success)',
+              backgroundColor: 'color-mix(in srgb, var(--success) 8%, var(--card))',
+              boxShadow: cardShadow,
+            }}
           >
             <div
-              className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--success) 20%, transparent)' }}
+              className="w-14 h-14 rounded-2xl flex items-center justify-center"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--success) 18%, transparent)' }}
             >
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" stroke="var(--success)">
-                <polyline points="20 6 9 17 4 12" />
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
+                strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                stroke="var(--success)">
+                <polyline points="20 6 9 17 4 12"/>
               </svg>
             </div>
             <p className="text-base font-bold" style={{ color: 'var(--success)' }}>
@@ -296,18 +334,16 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
           </div>
         ) : (
           <div
-            className="rounded-xl border p-5"
+            className="rounded-2xl border p-5"
             style={{
               borderColor: result?.status === 'error' ? 'var(--danger)' : 'var(--border)',
               backgroundColor: result?.status === 'error'
-                ? 'color-mix(in srgb, var(--danger) 8%, var(--card))'
+                ? 'color-mix(in srgb, var(--danger) 6%, var(--card))'
                 : 'var(--card)',
+              boxShadow: cardShadow,
             }}
           >
-            <p
-              className="text-[10px] font-semibold uppercase tracking-widest mb-3"
-              style={{ color: 'var(--muted)' }}
-            >
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
               Resultado
             </p>
             {result ? (
@@ -317,7 +353,10 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
                     className="inline-block w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: result.status === 'error' ? 'var(--danger)' : 'var(--muted)' }}
                   />
-                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: result.status === 'error' ? 'var(--danger)' : 'var(--muted)' }}>
+                  <span
+                    className="text-xs font-semibold uppercase tracking-wide"
+                    style={{ color: result.status === 'error' ? 'var(--danger)' : 'var(--muted)' }}
+                  >
                     {result.status === 'pending' ? 'En construcción' : 'Error'}
                   </span>
                 </div>
@@ -333,36 +372,40 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
           </div>
         )}
 
-
-        {/* Resumen de progreso */}
+        {/* Progreso */}
         <div
-          className="rounded-xl border p-5"
-          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+          className="rounded-2xl border p-5"
+          style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
         >
-          <p
-            className="text-[10px] font-semibold uppercase tracking-widest mb-3"
-            style={{ color: 'var(--muted)' }}
-          >
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>
             Progreso
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {GROUPS.map((group) => {
               const fields = group.keys.map((k) => fieldMap[k]).filter(Boolean);
               const filled = fields.filter((f) => (values[f.key] ?? '').trim() !== '').length;
               const total = fields.length;
-              const done = filled === total;
+              const done = filled === total && total > 0;
               return (
-                <div key={group.label} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: done ? 'var(--success)' : 'var(--border)' }}
-                    />
-                    <span className="text-xs" style={{ color: 'var(--foreground)' }}>
-                      {group.label}
-                    </span>
+                <div key={group.label} className="flex items-center gap-3">
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200"
+                    style={{
+                      backgroundColor: done
+                        ? 'var(--success)'
+                        : 'color-mix(in srgb, var(--border) 60%, transparent)',
+                      color: done ? '#fff' : 'var(--muted)',
+                    }}
+                  >
+                    {done ? <CheckIcon /> : null}
                   </div>
-                  <span className="text-xs tabular-nums" style={{ color: done ? 'var(--success)' : 'var(--muted)' }}>
+                  <span className="flex-1 text-xs" style={{ color: done ? 'var(--foreground)' : 'var(--muted)' }}>
+                    {group.label}
+                  </span>
+                  <span
+                    className="text-xs tabular-nums font-medium"
+                    style={{ color: done ? 'var(--success)' : 'var(--muted)' }}
+                  >
                     {filled}/{total}
                   </span>
                 </div>
@@ -371,21 +414,26 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
           </div>
 
           {/* Barra de progreso */}
-          <div className="mt-4">
+          <div className="mt-5">
             {(() => {
               const total = schema.fields.filter((f) => f.required).length;
               const filled = schema.fields.filter((f) => f.required && (values[f.key] ?? '').trim() !== '').length;
               const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
               return (
                 <>
-                  <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--muted)' }}>
+                  <div className="flex justify-between text-xs mb-2" style={{ color: 'var(--muted)' }}>
                     <span>Completado</span>
-                    <span className="tabular-nums">{pct}%</span>
+                    <span className="tabular-nums font-semibold" style={{ color: pct === 100 ? 'var(--success)' : 'var(--foreground)' }}>
+                      {pct}%
+                    </span>
                   </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
                     <div
-                      className="h-full rounded-full transition-all duration-300"
-                      style={{ width: `${pct}%`, backgroundColor: pct === 100 ? 'var(--success)' : 'var(--accent)' }}
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${pct}%`,
+                        backgroundColor: pct === 100 ? 'var(--success)' : 'var(--accent)',
+                      }}
                     />
                   </div>
                 </>

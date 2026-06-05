@@ -41,20 +41,31 @@ export default async function InmobiliariaPage({ params }: Props) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="px-8 pt-8 pb-6 border-b border-border bg-card/60">
-        <p className="text-xs font-medium mb-1" style={{ color: 'var(--muted)' }}>
-          Inmobiliaria {inm.name}
-        </p>
-        <h1
-          className="text-2xl font-semibold leading-tight"
-          style={{ fontFamily: 'var(--font-fraunces), serif' }}
-        >
-          Bloqueo de cliente
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-          Rellena los datos del cliente y presiona &ldquo;Bloquear cliente&rdquo; para
-          registrarlo en el portal.
-        </p>
+
+      {/* Header */}
+      <header
+        className="sticky top-0 z-10 px-8 py-5 border-b"
+        style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
+      >
+        <div className="flex items-start justify-between">
+          <div>
+            <span
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold mb-2"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                color: 'var(--accent)',
+              }}
+            >
+              {inm.name}
+            </span>
+            <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--foreground)' }}>
+              Bloqueo de cliente
+            </h1>
+            <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
+              Rellena los datos del cliente y presiona &ldquo;Bloquear cliente&rdquo; para registrarlo en el portal.
+            </p>
+          </div>
+        </div>
       </header>
 
       <main className="flex-1 px-8 py-7">
