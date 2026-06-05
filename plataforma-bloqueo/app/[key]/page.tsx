@@ -34,6 +34,9 @@ export default async function InmobiliariaPage({ params }: Props) {
   } else if (key === 'viva') {
     const { fetchVivaStock } = await import('@/lib/inmobiliarias/viva/stock');
     stockData = await fetchVivaStock();
+  } else if (key === 'fundamenta') {
+    const { fetchFundamentaStock } = await import('@/lib/inmobiliarias/fundamenta/stock');
+    stockData = await fetchFundamentaStock();
   }
 
   return (
