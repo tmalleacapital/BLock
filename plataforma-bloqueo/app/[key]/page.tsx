@@ -69,7 +69,7 @@ export default async function InmobiliariaPage({ params }: Props) {
       </header>
 
       <main className="flex-1 px-8 py-7">
-        <FichaForm inmobiliariaKey={key} schema={schema} stockData={stockData} />
+        <FichaForm inmobiliariaKey={key} inmobiliariaName={inm.name} schema={schema} stockData={stockData} />
       </main>
     </div>
   );

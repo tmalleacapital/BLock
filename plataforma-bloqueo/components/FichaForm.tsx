@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from 'react';
 import type { FieldDef, FieldSchema, RunResult, UnidadEntry } from '@/lib/inmobiliarias/types';
+import { saveBlocking } from '@/lib/history';
 
 interface FichaFormProps {
   inmobiliariaKey: string;
+  inmobiliariaName: string;
   schema: FieldSchema;
   stockData?: Record<string, UnidadEntry[]>;
 }
@@ -144,7 +146,7 @@ function CheckIcon() {
   );
 }
 
-export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaFormProps) {
+export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, stockData }: FichaFormProps) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [result, setResult] = useState<RunResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -181,6 +183,14 @@ export default function FichaForm({ inmobiliariaKey, schema, stockData }: FichaF
       });
       const json: RunResult = await res.json();
       setResult(json);
+      if (json.status === 'success') {
+        saveBlocking({
+          inmobiliariaKey,
+          inmobiliariaName,
+          rut: values.rut ?? '',
+          nombre: [values.nombres, values.apellidoPaterno].filter(Boolean).join(' '),
+        });
+      }
     } catch {
       setResult({ status: 'error', message: 'Error de conexión con el servidor.' });
     } finally {

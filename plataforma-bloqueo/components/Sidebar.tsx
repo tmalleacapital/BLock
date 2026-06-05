@@ -4,6 +4,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 
+function HomeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  );
+}
+
 function BuildingIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -28,7 +38,8 @@ function LockIcon() {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const activeKey = pathname.split('/')[1] ?? 'imagina';
+  const activeKey = pathname.split('/')[1] ?? '';
+  const isHome = pathname === '/';
 
   return (
     <aside
@@ -36,7 +47,7 @@ export default function Sidebar() {
       style={{ backgroundColor: 'var(--card)', borderRight: '1px solid var(--border)' }}
     >
       {/* Brand */}
-      <div className="px-5 pt-6 pb-5 flex items-center gap-3">
+      <Link href="/" className="px-5 pt-6 pb-5 flex items-center gap-3 no-underline">
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-xs font-bold"
           style={{ backgroundColor: 'var(--accent)' }}
@@ -51,13 +62,47 @@ export default function Sidebar() {
             Plataforma interna
           </p>
         </div>
-      </div>
+      </Link>
 
       <div className="mx-4 h-px" style={{ backgroundColor: 'var(--border)' }} />
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <div className="space-y-5">
+
+          {/* Inicio */}
+          <div>
+            <ul className="space-y-0.5">
+              <li>
+                <Link
+                  href="/"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  onMouseEnter={(e) => {
+                    if (!isHome) {
+                      (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'color-mix(in srgb, var(--accent) 9%, transparent)';
+                      (e.currentTarget as HTMLAnchorElement).style.color = 'var(--accent)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isHome) {
+                      (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '';
+                      (e.currentTarget as HTMLAnchorElement).style.color = 'var(--muted)';
+                    }
+                  }}
+                  style={
+                    isHome
+                      ? { backgroundColor: 'var(--accent)', color: '#ffffff' }
+                      : { color: 'var(--muted)' }
+                  }
+                >
+                  <HomeIcon />
+                  <span className="flex-1">Inicio</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
 
           {/* Activos */}
           <div>
