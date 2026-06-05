@@ -10,6 +10,7 @@ import { getFieldSchema as getEcasaSchema }        from './ecasa/schema';
 import { getFieldSchema as getDeisaSchema }        from './deisa/schema';
 import { getFieldSchema as getNorteVerdeSchema }   from './norte-verde/schema';
 import { getFieldSchema as getPazSchema }          from './paz/schema';
+import { getFieldSchema as getFaiSchema }          from './fai/schema';
 
 export interface InmobiliariaEntry {
   key: string;
@@ -30,6 +31,7 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'deisa',           name: 'Deisa',            enabled: true, active: false },
   { key: 'norte-verde',     name: 'Norte Verde',      enabled: true, active: false },
   { key: 'paz',             name: 'Paz',              enabled: true, active: true  },
+  { key: 'fai',             name: 'FAI',              enabled: true, active: true  },
 ];
 
 export function getSchema(key: string): FieldSchema | undefined {
@@ -45,6 +47,7 @@ export function getSchema(key: string): FieldSchema | undefined {
     case 'deisa':           return getDeisaSchema();
     case 'norte-verde':     return getNorteVerdeSchema();
     case 'paz':             return getPazSchema();
+    case 'fai':             return getFaiSchema();
     default:                return undefined;
   }
 }
