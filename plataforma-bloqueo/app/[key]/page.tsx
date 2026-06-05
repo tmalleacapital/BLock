@@ -19,24 +19,28 @@ export default async function InmobiliariaPage({ params }: Props) {
   if (!inm || !schema) notFound();
 
   let stockData: Record<string, UnidadEntry[]> | undefined;
-  if (key === 'ecasa') {
-    const { fetchEcasaStock } = await import('@/lib/inmobiliarias/ecasa/stock');
-    stockData = await fetchEcasaStock();
-  } else if (key === 'paz') {
-    const { fetchPazStock } = await import('@/lib/inmobiliarias/paz/stock');
-    stockData = await fetchPazStock();
-  } else if (key === 'sento') {
-    const { fetchSentoStock } = await import('@/lib/inmobiliarias/sento/stock');
-    stockData = await fetchSentoStock();
-  } else if (key === 'fai') {
-    const { fetchFaiStock } = await import('@/lib/inmobiliarias/fai/stock');
-    stockData = await fetchFaiStock();
-  } else if (key === 'viva') {
-    const { fetchVivaStock } = await import('@/lib/inmobiliarias/viva/stock');
-    stockData = await fetchVivaStock();
-  } else if (key === 'fundamenta') {
-    const { fetchFundamentaStock } = await import('@/lib/inmobiliarias/fundamenta/stock');
-    stockData = await fetchFundamentaStock();
+  try {
+    if (key === 'ecasa') {
+      const { fetchEcasaStock } = await import('@/lib/inmobiliarias/ecasa/stock');
+      stockData = await fetchEcasaStock();
+    } else if (key === 'paz') {
+      const { fetchPazStock } = await import('@/lib/inmobiliarias/paz/stock');
+      stockData = await fetchPazStock();
+    } else if (key === 'sento') {
+      const { fetchSentoStock } = await import('@/lib/inmobiliarias/sento/stock');
+      stockData = await fetchSentoStock();
+    } else if (key === 'fai') {
+      const { fetchFaiStock } = await import('@/lib/inmobiliarias/fai/stock');
+      stockData = await fetchFaiStock();
+    } else if (key === 'viva') {
+      const { fetchVivaStock } = await import('@/lib/inmobiliarias/viva/stock');
+      stockData = await fetchVivaStock();
+    } else if (key === 'fundamenta') {
+      const { fetchFundamentaStock } = await import('@/lib/inmobiliarias/fundamenta/stock');
+      stockData = await fetchFundamentaStock();
+    }
+  } catch {
+    // ORED API no disponible — el formulario carga sin datos de stock
   }
 
   return (

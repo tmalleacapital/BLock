@@ -3,11 +3,16 @@ import type { InmobiliariaAdapter, RunResult } from '../types';
 import { getFieldSchema } from './schema';
 
 const URL_PANEL = 'http://cubit.cl/imagina/Panel.aspx';
-const CREDS = {
-  cuenta: 'OPERACIONES',
-  dominio: 'CAPITALINTELIGENTE.CL',
-  clave: '3268',
-} as const;
+
+function getCreds() {
+  const cuenta  = process.env.IMAGINA_CUENTA;
+  const dominio = process.env.IMAGINA_DOMINIO;
+  const clave   = process.env.IMAGINA_CLAVE;
+  if (!cuenta || !dominio || !clave) {
+    throw new Error('Faltan variables de entorno IMAGINA_CUENTA, IMAGINA_DOMINIO o IMAGINA_CLAVE');
+  }
+  return { cuenta, dominio, clave };
+}
 
 // Finds the frame that contains a given selector, checking all frames including main.
 async function findFormFrame(
@@ -33,6 +38,7 @@ export const imaginaAdapter: InmobiliariaAdapter = {
   async run(ctx: Record<string, unknown>): Promise<RunResult> {
     const { chromium } = await import('playwright');
     const d = (ctx.data ?? ctx) as Record<string, string>;
+    const CREDS = getCreds();
 
     const browser = await chromium.launch({ headless: false, slowMo: 250 });
     const bCtx = await browser.newContext();
@@ -69,7 +75,7 @@ export const imaginaAdapter: InmobiliariaAdapter = {
       // ── 4. Región → esperar comunas → seleccionar ─────────────
       await $.selectOption('#region', d.region ?? '');
       await $.waitForFunction(
-        () => ((document.querySelector('#comuna') as HTMLSelectElement | null)?.options.length ?? 0) > 1,
+        () => ((document.querySelector('#comuna') as HTMLSelectElement | null)?.options?.length ?? 0) > 1,
         { timeout: 10_000 },
       );
       const comunaVal = await $.evaluate(
