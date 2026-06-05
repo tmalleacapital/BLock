@@ -19,8 +19,8 @@ const hankenGrotesk = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Capital Inteligente — Bloqueo de clientes",
-  description: "Plataforma interna para bloqueo de clientes en portales de inmobiliarias",
+  title: "B-Lock — Bloqueo de clientes",
+  description: "B-Lock: plataforma interna para bloqueo de clientes en portales de inmobiliarias",
 };
 
 export default function RootLayout({

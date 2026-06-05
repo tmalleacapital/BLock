@@ -41,11 +41,11 @@ export default function Sidebar() {
           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-xs font-bold"
           style={{ backgroundColor: 'var(--accent)' }}
         >
-          CI
+          BL
         </div>
         <div className="min-w-0">
           <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--foreground)' }}>
-            Capital Inteligente
+            B-Lock
           </p>
           <p className="text-[11px] leading-tight mt-0.5" style={{ color: 'var(--muted)' }}>
             Plataforma interna
@@ -132,11 +132,11 @@ export default function Sidebar() {
             color: 'var(--accent)',
           }}
         >
-          CI
+          BL
         </div>
         <div className="min-w-0">
           <p className="text-xs font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-            Bloqueo de clientes
+            B-Lock
           </p>
           <p className="text-[10px]" style={{ color: 'var(--muted)' }}>v1.0</p>
         </div>
