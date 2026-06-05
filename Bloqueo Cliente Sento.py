@@ -52,7 +52,7 @@ FIRMA_HTML = """
 
 GMAIL_USER    = os.environ.get('GMAIL_USER', '')
 GMAIL_PASS    = os.environ.get('GMAIL_PASS', '')
-DESTINATARIOS = []  # PENDIENTE: agregar correos de Sento
+DESTINATARIOS = ["mvarela@sento.cl"]
 
 LABELS = {
     "rut":               "RUT",
