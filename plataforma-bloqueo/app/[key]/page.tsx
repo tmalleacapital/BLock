@@ -31,6 +31,9 @@ export default async function InmobiliariaPage({ params }: Props) {
   } else if (key === 'fai') {
     const { fetchFaiStock } = await import('@/lib/inmobiliarias/fai/stock');
     stockData = await fetchFaiStock();
+  } else if (key === 'viva') {
+    const { fetchVivaStock } = await import('@/lib/inmobiliarias/viva/stock');
+    stockData = await fetchVivaStock();
   }
 
   return (
