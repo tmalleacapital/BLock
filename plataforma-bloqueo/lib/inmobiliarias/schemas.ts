@@ -29,7 +29,7 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'ecasa',           name: 'Ecasa',            enabled: true, active: true  },
   { key: 'deisa',           name: 'Deisa',            enabled: true, active: false },
   { key: 'norte-verde',     name: 'Norte Verde',      enabled: true, active: false },
-  { key: 'paz',             name: 'Paz',              enabled: true, active: false },
+  { key: 'paz',             name: 'Paz',              enabled: true, active: true  },
 ];
 
 export function getSchema(key: string): FieldSchema | undefined {

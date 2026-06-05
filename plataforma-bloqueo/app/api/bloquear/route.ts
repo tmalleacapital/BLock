@@ -7,6 +7,7 @@ const SCRIPTS: Record<string, string> = {
   euro:      'Bloqueo Cliente Euro.py',
   simonetti: 'Bloqueo Cliente Simonetti.py',
   ecasa:     'Bloqueo Clientes Ecasa.py',
+  paz:       'Bloqueo Clientes Paz.py',
 };
 
 function runScript(scriptName: string, data: Record<string, string>): Promise<Response> {
