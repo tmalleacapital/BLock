@@ -28,6 +28,7 @@ export async function fetchFaiStock(): Promise<Record<string, UnidadEntry[]>> {
   const stock: Record<string, UnidadEntry[]> = {};
 
   for (const row of data.rows) {
+    if (!row.proyecto) continue;
     if (!stock[row.proyecto]) stock[row.proyecto] = [];
     stock[row.proyecto].push({ unidad: row.unidad, tipologia: row.tipologia });
   }
