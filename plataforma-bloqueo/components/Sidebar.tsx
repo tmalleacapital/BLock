@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 
@@ -47,20 +48,19 @@ export default function Sidebar() {
       style={{ backgroundColor: 'var(--card)', borderRight: '1px solid var(--border)' }}
     >
       {/* Brand */}
-      <Link href="/" className="px-5 pt-6 pb-5 flex items-center gap-3 no-underline">
+      <Link href="/" className="px-4 pt-5 pb-4 block no-underline">
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white text-xs font-bold"
-          style={{ backgroundColor: 'var(--accent)' }}
+          className="relative overflow-hidden rounded-xl"
+          style={{ height: 52, backgroundColor: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.14)' }}
         >
-          BL
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-bold leading-tight truncate" style={{ color: 'var(--foreground)' }}>
-            B-Lock
-          </p>
-          <p className="text-[11px] leading-tight mt-0.5" style={{ color: 'var(--muted)' }}>
-            Plataforma interna
-          </p>
+          <Image
+            src="/LOGOBLOCK.png"
+            alt="Brekto Client Lock"
+            width={311}
+            height={311}
+            priority
+            style={{ position: 'absolute', left: -56, top: -125 }}
+          />
         </div>
       </Link>
 
