@@ -29,7 +29,7 @@ const inputBase = [
 
 const inputNormal = {
   borderColor: 'var(--border)',
-  backgroundColor: '#ffffff',
+  backgroundColor: 'var(--card)',
   color: 'var(--foreground)',
 };
 
@@ -96,7 +96,7 @@ function FieldInput({
         value={value}
         placeholder="Se completa automáticamente"
         className={`${cls} opacity-60 cursor-default`}
-        style={{ ...inputNormal, backgroundColor: '#f8fafc' }}
+        style={{ ...inputNormal, backgroundColor: 'var(--background)' }}
       />
     );
   }

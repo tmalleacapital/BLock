@@ -6,8 +6,6 @@ import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 import { getHistory } from '@/lib/history';
 import type { BlockingRecord } from '@/lib/history';
 
-const cardShadow = '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)';
-
 function isToday(iso: string): boolean {
   const d = new Date(iso);
   const now = new Date();
@@ -36,25 +34,11 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function InmobiliariaInitials({ name }: { name: string }) {
-  const initials = name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase();
-  return (
-    <div
-      className="w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-        color: 'var(--accent)',
-      }}
-    >
-      {initials}
-    </div>
-  );
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Buenos días.';
+  if (h < 19) return 'Buenas tardes.';
+  return 'Buenas noches.';
 }
 
 function ArrowIcon() {
@@ -76,26 +60,98 @@ function LockIcon() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function SunIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function LayersIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    </svg>
+  );
+}
+
+function BuildingIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <path d="M9 22V12h6v10" />
+      <circle cx="9" cy="7" r=".5" fill="currentColor" />
+      <circle cx="15" cy="7" r=".5" fill="currentColor" />
+    </svg>
+  );
+}
+
+const STAT_CARDS = [
+  {
+    key: 'today',
+    label: 'Hoy',
+    description: 'Bloqueos de hoy',
+    icon: <SunIcon />,
+    iconBg: '#0d9488',
+  },
+  {
+    key: 'week',
+    label: 'Esta semana',
+    description: 'En los últimos 7 días',
+    icon: <CalendarIcon />,
+    iconBg: '#3b82f6',
+  },
+  {
+    key: 'total',
+    label: 'Total',
+    description: 'Historial completo',
+    icon: <LayersIcon />,
+    iconBg: '#8b5cf6',
+  },
+];
+
+function InmobiliariaInitials({ name }: { name: string }) {
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
   return (
     <div
-      className="rounded-2xl border p-5 flex flex-col gap-1"
-      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+      style={{
+        backgroundColor: 'color-mix(in srgb, var(--accent) 18%, transparent)',
+        color: 'var(--accent)',
+      }}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
-        {label}
-      </p>
-      <p className="text-3xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>
-        {value}
-      </p>
+      {initials}
     </div>
   );
 }
 
 export default function HomePage() {
   const [history, setHistory] = useState<BlockingRecord[]>([]);
+  const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
+    setGreeting(getGreeting());
     const refresh = () => setHistory(getHistory());
     refresh();
     document.addEventListener('visibilitychange', refresh);
@@ -104,6 +160,13 @@ export default function HomePage() {
 
   const countToday = history.filter((r) => isToday(r.fecha)).length;
   const countWeek = history.filter((r) => isThisWeek(r.fecha)).length;
+  const countTotal = history.length;
+
+  const statValues: Record<string, number> = {
+    today: countToday,
+    week: countWeek,
+    total: countTotal,
+  };
 
   const active = INMOBILIARIAS.filter((inm) => inm.active);
   const inactive = INMOBILIARIAS.filter((inm) => !inm.active);
@@ -113,46 +176,115 @@ export default function HomePage() {
 
       {/* Header */}
       <header
-        className="sticky top-0 z-10 px-8 py-5 border-b"
+        className="sticky top-0 z-10 px-8 py-4 border-b flex items-center gap-3"
         style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
       >
-        <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--foreground)' }}>
-          Menú principal
-        </h1>
-        <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-          Selecciona una inmobiliaria para registrar un bloqueo de cliente.
+        <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+          Inicio
         </p>
       </header>
 
-      <main className="flex-1 px-8 py-7 space-y-8">
+      <main className="flex-1 px-8 py-8 space-y-8">
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 max-w-sm">
-          <StatCard label="Hoy" value={countToday} />
-          <StatCard label="Esta semana" value={countWeek} />
-          <StatCard label="Total" value={history.length} />
+        {/* Greeting */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
+            {greeting || 'Bienvenido.'}
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
+            Este es tu resumen de B-Lock. Estás en{' '}
+            <span className="font-semibold" style={{ color: 'var(--foreground)' }}>Capital Inteligente</span>.
+          </p>
         </div>
 
-        {/* Cards activas */}
+        {/* Hero card */}
+        <Link
+          href={`/${active[0]?.key ?? 'imagina'}`}
+          className="block rounded-2xl p-7 transition-opacity hover:opacity-90"
+          style={{
+            background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #6d28d9 100%)',
+          }}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/70">
+                  Bloqueos
+                </p>
+              </div>
+              <p className="text-xl font-bold text-white leading-snug">
+                Registra un cliente en minutos
+              </p>
+              <p className="mt-1.5 text-sm text-white/70 max-w-sm">
+                Selecciona un portal y completa el formulario. La automatización se ejecuta al instante.
+              </p>
+            </div>
+            <div className="text-white/60 shrink-0 mt-1">
+              <ArrowIcon />
+            </div>
+          </div>
+          <div className="mt-5">
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white">
+              Ir al portal
+              <ArrowIcon />
+            </span>
+          </div>
+        </Link>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {STAT_CARDS.map((s) => (
+            <div
+              key={s.key}
+              className="rounded-2xl border p-5 flex flex-col gap-3"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+            >
+              <div className="flex items-center justify-between">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: `${s.iconBg}22`, color: s.iconBg }}
+                >
+                  {s.icon}
+                </div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                  {s.label}
+                </p>
+              </div>
+              <div>
+                <p className="text-4xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>
+                  {statValues[s.key]}
+                </p>
+                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{s.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Portales activos */}
         <section>
           <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>
-            Inmobiliarias activas
+            Portales activos
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {active.map((inm) => (
               <Link
                 key={inm.key}
                 href={`/${inm.key}`}
                 className="rounded-2xl border p-5 flex flex-col gap-4 transition-all duration-150"
-                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--accent)';
-                  (e.currentTarget as HTMLAnchorElement).style.boxShadow =
-                    '0 4px 16px 0 color-mix(in srgb, var(--accent) 18%, transparent)';
+                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor =
+                    'color-mix(in srgb, var(--accent) 6%, var(--card))';
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)';
-                  (e.currentTarget as HTMLAnchorElement).style.boxShadow = cardShadow;
+                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'var(--card)';
                 }}
               >
                 <div className="flex items-center justify-between">
@@ -160,41 +292,42 @@ export default function HomePage() {
                   <span
                     className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--success) 12%, transparent)',
+                      backgroundColor: 'color-mix(in srgb, var(--success) 14%, transparent)',
                       color: 'var(--success)',
                     }}
                   >
                     Activo
                   </span>
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{inm.name}</p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Portal de bloqueo</p>
                 </div>
                 <div
-                  className="flex items-center gap-1.5 text-xs font-semibold mt-auto"
+                  className="flex items-center gap-1.5 text-xs font-semibold"
                   style={{ color: 'var(--accent)' }}
                 >
-                  Bloquear cliente
-                  <ArrowIcon />
+                  <BuildingIcon />
+                  Ir al portal
+                  <span className="ml-auto"><ArrowIcon /></span>
                 </div>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* Cards inactivas */}
+        {/* Próximamente */}
         {inactive.length > 0 && (
           <section>
             <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>
               Próximamente
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {inactive.map((inm) => (
                 <div
                   key={inm.key}
-                  className="rounded-2xl border p-5 flex flex-col gap-4 opacity-50 cursor-not-allowed select-none"
-                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+                  className="rounded-2xl border p-5 flex flex-col gap-4 opacity-40 cursor-not-allowed select-none"
+                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
                 >
                   <div className="flex items-center justify-between">
                     <InmobiliariaInitials name={inm.name} />
@@ -219,14 +352,14 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* Historial reciente */}
+        {/* Actividad reciente */}
         <section>
           <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>
             Actividad reciente
           </p>
           <div
             className="rounded-2xl border overflow-hidden"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
           >
             {history.length === 0 ? (
               <div className="px-6 py-12 text-center">
@@ -265,7 +398,7 @@ export default function HomePage() {
                         <span
                           className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
                           style={{
-                            backgroundColor: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                            backgroundColor: 'color-mix(in srgb, var(--accent) 14%, transparent)',
                             color: 'var(--accent)',
                           }}
                         >
