@@ -1,14 +1,25 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { FieldDef, FieldSchema, RunResult, UnidadEntry } from '@/lib/inmobiliarias/types';
-import { saveBlocking } from '@/lib/history';
+import { savePendingJob, claimPendingJob } from '@/lib/pendingJobs';
 
 interface FichaFormProps {
   inmobiliariaKey: string;
   inmobiliariaName: string;
   schema: FieldSchema;
   stockData?: Record<string, UnidadEntry[]>;
+  emailRecipients?: string[];
+  asesorEmail?: string;
+}
+
+type JobStatus = 'idle' | 'queuing' | 'en_cola' | 'procesando' | 'done';
+
+interface ApiJobState {
+  id: string;
+  status: 'en_cola' | 'procesando' | 'completado';
+  position: number;
+  result?: RunResult;
 }
 
 const GROUPS: { label: string; keys: string[] }[] = [
@@ -35,6 +46,19 @@ const inputNormal = {
 
 const inputFocusRing = 'focus:ring-[color:color-mix(in_srgb,var(--accent)_22%,transparent)] focus:border-[color:var(--accent)]';
 
+function formatRut(raw: string): string {
+  const clean = raw.replace(/[^0-9kK]/g, '').toUpperCase();
+  if (clean.length < 2) return clean;
+  const dv = clean.slice(-1);
+  const body = clean.slice(0, -1);
+  let formatted = '';
+  for (let i = 0; i < body.length; i++) {
+    if (i > 0 && (body.length - i) % 3 === 0) formatted += '.';
+    formatted += body[i];
+  }
+  return `${formatted}-${dv}`;
+}
+
 function FieldInput({
   field,
   value,
@@ -50,7 +74,7 @@ function FieldInput({
 }) {
   const cls = `${inputBase} ${inputFocusRing}`;
 
-  if (field.type === 'cascade-parent' && stockData) {
+  if (field.type === 'cascade-parent' && stockData && Object.keys(stockData).length > 0) {
     const proyectos = Object.keys(stockData).sort();
     return (
       <select
@@ -68,7 +92,7 @@ function FieldInput({
     );
   }
 
-  if (field.type === 'cascade-child' && stockData) {
+  if (field.type === 'cascade-child' && stockData && Object.keys(stockData).length > 0) {
     const unidades = parentValue ? (stockData[parentValue] ?? []) : [];
     return (
       <select
@@ -137,6 +161,15 @@ function FieldInput({
   );
 }
 
+function getErrorHint(message: string): string {
+  if (/autenticad/i.test(message)) return 'Tu sesión expiró — cierra sesión y vuelve a ingresar.';
+  if (/reiniciado|disponible/i.test(message)) return 'El servidor se reinició. Vuelve a enviar el formulario.';
+  if (/conexión|connection/i.test(message)) return 'Revisa tu conexión a internet e intenta nuevamente.';
+  if (/timeout|tiempo/i.test(message)) return 'El portal tardó demasiado. Intenta de nuevo más tarde.';
+  if (/credencial|password|contraseña|acceso|login/i.test(message)) return 'Las credenciales del portal pueden estar vencidas — avisa al administrador.';
+  return 'Si el error persiste, contacta al administrador con el mensaje de arriba.';
+}
+
 function CheckIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -146,19 +179,44 @@ function CheckIcon() {
   );
 }
 
-export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, stockData }: FichaFormProps) {
+function Spinner({ size = 4 }: { size?: number }) {
+  return (
+    <span
+      className={`inline-block w-${size} h-${size} border-2 rounded-full animate-spin`}
+      style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+    />
+  );
+}
+
+export default function FichaForm({
+  inmobiliariaKey,
+  inmobiliariaName,
+  schema,
+  stockData,
+  emailRecipients,
+  asesorEmail,
+}: FichaFormProps) {
   const [values, setValues] = useState<Record<string, string>>({});
+  const [jobStatus, setJobStatus] = useState<JobStatus>('idle');
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [queuePosition, setQueuePosition] = useState<number>(0);
   const [result, setResult] = useState<RunResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [dupWarning, setDupWarning] = useState(false);
+
+  const submitSnapshot = useRef<{ rut: string; nombre: string } | null>(null);
 
   const handleReset = () => {
     setValues({});
     setResult(null);
+    setJobId(null);
+    setJobStatus('idle');
+    setQueuePosition(0);
+    setDupWarning(false);
   };
 
   const handleChange = useCallback((key: string, value: string) => {
     setValues((prev) => {
-      const next = { ...prev, [key]: value };
+      const next = { ...prev, [key]: key === 'rut' ? formatRut(value) : value };
       if (key === 'proyecto') {
         next.unidad    = '';
         next.tipologia = '';
@@ -172,38 +230,148 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
     });
   }, [stockData]);
 
+  // Polling effect
+  useEffect(() => {
+    if (jobStatus !== 'en_cola' && jobStatus !== 'procesando') return;
+    if (!jobId) return;
+
+    const id = jobId;
+    const snapshot = submitSnapshot.current;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/bloquear/status/${id}`);
+        if (!res.ok) {
+          if (res.status === 404) {
+            setResult({ status: 'error', message: 'La solicitud ya no está disponible (servidor reiniciado).' });
+            setJobStatus('done');
+          }
+          return;
+        }
+        const job = (await res.json()) as ApiJobState;
+
+        if (job.status === 'en_cola') {
+          setJobStatus('en_cola');
+          setQueuePosition(job.position);
+        } else if (job.status === 'procesando') {
+          setJobStatus('procesando');
+        } else if (job.status === 'completado') {
+          clearInterval(interval);
+          const r = job.result ?? { status: 'error', message: 'Sin respuesta del servidor.' };
+          setResult(r);
+          setJobStatus('done');
+          if (r.status === 'success' && snapshot) {
+            const claimed = claimPendingJob(id);
+            if (claimed) {
+              void fetch('/api/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  inmobiliariaKey,
+                  inmobiliariaName,
+                  rut: snapshot.rut,
+                  nombre: snapshot.nombre,
+                  asesorEmail: claimed.asesorEmail,
+                }),
+              }).then(() => {
+                window.dispatchEvent(new CustomEvent('history:updated'));
+              });
+            }
+          }
+        }
+      } catch {
+        // ignore transient fetch errors
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId, jobStatus]);
+
   const allFilled = schema.fields
     .filter((f) => f.required)
     .every((f) => (values[f.key] ?? '').trim() !== '');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const isProcessing = jobStatus === 'queuing' || jobStatus === 'en_cola' || jobStatus === 'procesando';
+  const isSuccess = jobStatus === 'done' && result?.status === 'success';
+
+  async function doSubmit(force = false) {
+    if (!force && values.rut) {
+      try {
+        const check = await fetch(
+          `/api/history?rut=${encodeURIComponent(values.rut)}&key=${encodeURIComponent(inmobiliariaKey)}`,
+          { method: 'HEAD' },
+        );
+        if (check.headers.get('x-duplicate') === '1') {
+          setDupWarning(true);
+          return;
+        }
+      } catch {
+        // if check fails, proceed anyway
+      }
+    }
+    setDupWarning(false);
+    setJobStatus('queuing');
     setResult(null);
+    setJobId(null);
+
+    submitSnapshot.current = {
+      rut: values.rut ?? '',
+      nombre: [values.nombres, values.apellidoPaterno].filter(Boolean).join(' '),
+    };
+
     try {
       const res = await fetch('/api/bloquear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ inmobiliaria: inmobiliariaKey, data: values }),
       });
-      const json: RunResult = await res.json();
-      setResult(json);
-      if (json.status === 'success') {
-        saveBlocking({
-          inmobiliariaKey,
-          inmobiliariaName,
-          rut: values.rut ?? '',
-          nombre: [values.nombres, values.apellidoPaterno].filter(Boolean).join(' '),
-        });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(err.message ?? `Error del servidor (${res.status}).`);
       }
+      const json = (await res.json()) as { jobId: string };
+
+      savePendingJob({
+        jobId: json.jobId,
+        inmobiliaria: inmobiliariaKey,
+        inmobiliariaName,
+        rut: submitSnapshot.current.rut,
+        nombre: submitSnapshot.current.nombre,
+        asesorEmail: asesorEmail ?? '',
+        submittedAt: Date.now(),
+      });
+
+      setJobId(json.jobId);
+      setJobStatus('en_cola');
+      setQueuePosition(1);
     } catch {
       setResult({ status: 'error', message: 'Error de conexión con el servidor.' });
-    } finally {
-      setLoading(false);
+      setJobStatus('done');
     }
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void doSubmit();
   };
 
   const fieldMap = Object.fromEntries(schema.fields.map((f) => [f.key, f]));
+
+  // Email preview data (computed when emailRecipients is set)
+  const emailPreview = emailRecipients && emailRecipients.length > 0 ? (() => {
+    const today = new Date().toLocaleDateString('es-CL', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+    }).replace(/\//g, '-');
+    const nombre = [values.nombres, values.apellidoPaterno, values.apellidoMaterno]
+      .filter(Boolean).join(' ').trim().toUpperCase() || '…';
+    const rut = values.rut || '…';
+    const subject = `BLOQUEO CLIENTE ${nombre} / RUT ${rut} / FECHA ${today}`;
+    const bodyLines = schema.fields
+      .filter((f) => (values[f.key] ?? '').trim())
+      .map((f) => ({ label: f.label, value: values[f.key] }));
+    return { subject, bodyLines };
+  })() : null;
 
   return (
     <div className="flex flex-col xl:flex-row gap-6 items-start animate-in fade-in slide-in-from-bottom-3 duration-400">
@@ -223,7 +391,6 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
                 boxShadow: cardShadow,
               }}
             >
-              {/* Section header */}
               <div className="flex items-center gap-2.5 mb-5">
                 <span
                   className="w-1 h-5 rounded-full shrink-0"
@@ -271,31 +438,71 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
           );
         })}
 
+        {/* ── Advertencia duplicado ── */}
+        {dupWarning && (
+          <div
+            className="rounded-xl border p-4 animate-in fade-in slide-in-from-top-1 duration-200"
+            style={{
+              borderColor: 'var(--warning)',
+              backgroundColor: 'color-mix(in srgb, var(--warning) 8%, var(--card))',
+            }}
+          >
+            <p className="text-sm font-semibold" style={{ color: 'var(--warning)' }}>
+              RUT ya registrado
+            </p>
+            <p className="text-xs mt-1" style={{ color: 'var(--foreground)' }}>
+              El RUT <span className="font-mono font-semibold">{values.rut}</span> ya tiene un
+              bloqueo registrado en {inmobiliariaName}. ¿Deseas continuar de todas formas?
+            </p>
+            <div className="flex gap-2 mt-3">
+              <button
+                type="button"
+                onClick={() => void doSubmit(true)}
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
+                style={{ backgroundColor: 'var(--warning)', color: '#fff' }}
+              >
+                Continuar de todas formas
+              </button>
+              <button
+                type="button"
+                onClick={() => setDupWarning(false)}
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-opacity hover:opacity-80"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--border) 60%, transparent)',
+                  color: 'var(--foreground)',
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Acción ── */}
         <div className="flex items-center gap-4 pt-1">
           <button
             type="submit"
-            disabled={!allFilled || loading}
+            disabled={!allFilled || isProcessing || isSuccess}
             className="inline-flex items-center gap-2.5 px-8 py-3 rounded-xl text-sm font-semibold transition-all focus:outline-none focus:ring-2 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: 'var(--accent)',
               color: '#fff',
-              boxShadow: allFilled && !loading ? '0 4px 14px 0 color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
+              boxShadow: allFilled && !isProcessing && !isSuccess ? '0 4px 14px 0 color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
               // @ts-expect-error CSS custom property
               '--tw-ring-color': 'color-mix(in srgb, var(--accent) 40%, transparent)',
             }}
             onMouseEnter={(e) => {
-              if (!loading && allFilled)
+              if (!isProcessing && allFilled && !isSuccess)
                 (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent-hover)';
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--accent)';
             }}
           >
-            {loading ? (
+            {jobStatus === 'queuing' ? (
               <>
-                <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Procesando…
+                <Spinner size={4} />
+                Enviando…
               </>
             ) : (
               <>
@@ -309,7 +516,7 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
             )}
           </button>
 
-          {!allFilled && (
+          {!allFilled && !isProcessing && !isSuccess && !dupWarning && (
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
               Completa todos los campos para continuar.
             </p>
@@ -321,7 +528,7 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
       <aside className="w-full xl:w-72 shrink-0 space-y-4">
 
         {/* Estado */}
-        {result?.status === 'success' ? (
+        {isSuccess ? (
           <div
             className="rounded-2xl border-2 p-6 flex flex-col items-center text-center gap-3 animate-in fade-in zoom-in-95 duration-300"
             style={{
@@ -344,19 +551,15 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
               Cliente bloqueado
             </p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
-              {result.message}
+              {result?.message}
             </p>
             <button
               type="button"
               onClick={handleReset}
               className="mt-1 w-full rounded-xl py-2.5 text-sm font-semibold transition-colors"
               style={{ backgroundColor: 'var(--success)', color: '#fff' }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.opacity = '0.88';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.opacity = '1';
-              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.88'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
             >
               Bloquear otro cliente
             </button>
@@ -365,17 +568,80 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
           <div
             className="rounded-2xl border p-5"
             style={{
-              borderColor: result?.status === 'error' ? 'var(--danger)' : 'var(--border)',
-              backgroundColor: result?.status === 'error'
+              borderColor: jobStatus === 'done' && result?.status === 'error' ? 'var(--danger)' : 'var(--border)',
+              backgroundColor: jobStatus === 'done' && result?.status === 'error'
                 ? 'color-mix(in srgb, var(--danger) 6%, var(--card))'
                 : 'var(--card)',
               boxShadow: cardShadow,
             }}
           >
             <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-              Resultado
+              Estado
             </p>
-            {result ? (
+
+            {jobStatus === 'idle' && (
+              <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                El resultado aparecerá aquí tras enviar el formulario.
+              </p>
+            )}
+
+            {jobStatus === 'queuing' && (
+              <div className="flex items-center gap-2.5">
+                <Spinner size={4} />
+                <span className="text-sm" style={{ color: 'var(--muted)' }}>Enviando solicitud…</span>
+              </div>
+            )}
+
+            {jobStatus === 'en_cola' && (
+              <div className="space-y-3 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent)' }} />
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>
+                    En cola
+                  </span>
+                </div>
+                <p className="text-2xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>
+                  {queuePosition === 1 ? 'Siguiente' : `#${queuePosition}`}
+                </p>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
+                  {queuePosition === 1
+                    ? 'Eres el siguiente en la cola. Comenzará en breve.'
+                    : `Hay ${queuePosition - 1} solicitud${queuePosition - 1 !== 1 ? 'es' : ''} antes que la tuya.`}
+                </p>
+                <div className="flex gap-1 pt-1">
+                  {Array.from({ length: Math.min(queuePosition, 5) }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="h-1.5 flex-1 rounded-full"
+                      style={{
+                        backgroundColor: i < queuePosition - 1
+                          ? 'color-mix(in srgb, var(--accent) 30%, transparent)'
+                          : 'var(--accent)',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {jobStatus === 'procesando' && (
+              <div className="space-y-3 animate-in fade-in duration-200">
+                <div className="flex items-center gap-2.5">
+                  <Spinner size={4} />
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--accent)' }}>
+                    Procesando
+                  </span>
+                </div>
+                <p className="text-sm" style={{ color: 'var(--foreground)' }}>
+                  Automatizando el bloqueo en el portal…
+                </p>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                  Esto puede tardar hasta 5 minutos.
+                </p>
+              </div>
+            )}
+
+            {jobStatus === 'done' && result && result.status !== 'success' && (
               <div className="space-y-2 animate-in fade-in duration-200">
                 <div className="flex items-center gap-2">
                   <span
@@ -392,11 +658,76 @@ export default function FichaForm({ inmobiliariaKey, inmobiliariaName, schema, s
                 <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
                   {result.message}
                 </p>
+                {result.status === 'error' && (
+                  <>
+                    <p className="text-xs leading-relaxed pt-0.5" style={{ color: 'var(--muted)' }}>
+                      {getErrorHint(result.message ?? '')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void doSubmit(true)}
+                      className="mt-1 w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-opacity hover:opacity-80"
+                      style={{ backgroundColor: 'var(--danger)', color: '#fff' }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                      </svg>
+                      Reintentar
+                    </button>
+                  </>
+                )}
               </div>
-            ) : (
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                El resultado aparecerá aquí tras enviar el formulario.
+            )}
+          </div>
+        )}
+
+        {/* Vista previa del correo */}
+        {emailPreview && (
+          <div
+            className="rounded-2xl border p-5"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ color: 'var(--muted)' }}>
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 7-10 7L2 7"/>
+              </svg>
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                Vista previa del correo
               </p>
+            </div>
+
+            <div className="space-y-1.5 text-xs">
+              <div className="flex gap-1.5">
+                <span className="shrink-0 font-semibold" style={{ color: 'var(--muted)', minWidth: '38px' }}>Para:</span>
+                <span className="break-all" style={{ color: 'var(--foreground)' }}>
+                  {emailRecipients!.join(', ')}
+                </span>
+              </div>
+              <div className="flex gap-1.5">
+                <span className="shrink-0 font-semibold" style={{ color: 'var(--muted)', minWidth: '38px' }}>Asunto:</span>
+                <span className="font-medium leading-snug" style={{ color: 'var(--foreground)' }}>
+                  {emailPreview.subject}
+                </span>
+              </div>
+            </div>
+
+            {emailPreview.bodyLines.length > 0 && (
+              <div
+                className="mt-3 pt-3 border-t space-y-0.5"
+                style={{ borderColor: 'var(--border)' }}
+              >
+                {emailPreview.bodyLines.map(({ label, value }) => (
+                  <p key={label} className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+                    <span className="font-medium" style={{ color: 'var(--foreground)' }}>{label}:</span>{' '}
+                    {value}
+                  </p>
+                ))}
+              </div>
             )}
           </div>
         )}

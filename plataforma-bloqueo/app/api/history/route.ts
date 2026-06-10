@@ -1,0 +1,63 @@
+import type { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
+import { getSession, COOKIE_NAME, sendConfirmationEmail } from '@/lib/auth';
+import { getAllHistory, addRecord, isDuplicate } from '@/lib/historyServer';
+import type { BlockingRecord } from '@/lib/historyServer';
+
+async function requireAuth() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  return token ? getSession(token) : null;
+}
+
+export async function GET() {
+  const session = await requireAuth();
+  if (!session) return Response.json({ error: 'No autenticado.' }, { status: 401 });
+  return Response.json(getAllHistory());
+}
+
+export async function POST(request: NextRequest) {
+  const session = await requireAuth();
+  if (!session) return Response.json({ error: 'No autenticado.' }, { status: 401 });
+
+  const body = (await request.json()) as Partial<Omit<BlockingRecord, 'id' | 'fecha'>>;
+
+  if (!body.inmobiliariaKey || !body.rut) {
+    return Response.json({ error: 'Datos inválidos.' }, { status: 400 });
+  }
+
+  const record = addRecord({
+    inmobiliariaKey: body.inmobiliariaKey,
+    inmobiliariaName: body.inmobiliariaName ?? body.inmobiliariaKey,
+    rut: body.rut,
+    nombre: body.nombre ?? '',
+    asesorEmail: body.asesorEmail,
+  });
+
+  // Enviar confirmación al asesor sin bloquear la respuesta
+  if (body.asesorEmail) {
+    sendConfirmationEmail({
+      to: body.asesorEmail,
+      rut: record.rut,
+      nombre: record.nombre,
+      inmobiliariaName: record.inmobiliariaName,
+      fecha: record.fecha,
+    }).catch(() => {});
+  }
+
+  return Response.json(record, { status: 201 });
+}
+
+export async function HEAD(request: NextRequest) {
+  const session = await requireAuth();
+  if (!session) return new Response(null, { status: 401 });
+
+  const url = new URL(request.url);
+  const rut = url.searchParams.get('rut') ?? '';
+  const key = url.searchParams.get('key') ?? '';
+
+  return new Response(null, {
+    status: 200,
+    headers: { 'x-duplicate': isDuplicate(rut, key) ? '1' : '0' },
+  });
+}

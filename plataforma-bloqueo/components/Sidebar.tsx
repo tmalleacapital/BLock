@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 
@@ -27,20 +26,21 @@ function BuildingIcon() {
   );
 }
 
-function LockIcon() {
+
+function ShieldIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2"/>
-      <path d="M7 11V7a5 5 0 0110 0v4"/>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
     </svg>
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({ isAdmin }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const activeKey = pathname.split('/')[1] ?? '';
   const isHome = pathname === '/';
+  const isAdminPage = pathname === '/admin';
 
   return (
     <aside
@@ -49,19 +49,17 @@ export default function Sidebar() {
     >
       {/* Brand */}
       <Link href="/" className="px-4 pt-5 pb-4 block no-underline">
-        <div
-          className="relative overflow-hidden rounded-xl"
-          style={{ height: 52, backgroundColor: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.14)' }}
-        >
-          <Image
-            src="/LOGOBLOCK.png"
-            alt="Brekto Client Lock"
-            width={311}
-            height={311}
-            priority
-            style={{ position: 'absolute', left: -56, top: -125 }}
-          />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.svg"
+          alt="Brekto Client Lock"
+          style={{
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+            filter: 'var(--logo-filter)',
+          }}
+        />
       </Link>
 
       <div className="mx-4 h-px" style={{ backgroundColor: 'var(--border)' }} />
@@ -101,6 +99,42 @@ export default function Sidebar() {
               </li>
             </ul>
           </div>
+
+          {isAdmin && (
+            <>
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+              <div>
+                <ul className="space-y-0.5">
+                  <li>
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      onMouseEnter={(e) => {
+                        if (!isAdminPage) {
+                          (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'color-mix(in srgb, var(--accent) 9%, transparent)';
+                          (e.currentTarget as HTMLAnchorElement).style.color = 'var(--accent)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isAdminPage) {
+                          (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '';
+                          (e.currentTarget as HTMLAnchorElement).style.color = 'var(--muted)';
+                        }
+                      }}
+                      style={
+                        isAdminPage
+                          ? { backgroundColor: 'var(--accent)', color: '#ffffff' }
+                          : { color: 'var(--muted)' }
+                      }
+                    >
+                      <ShieldIcon />
+                      <span className="flex-1">Administración</span>
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </>
+          )}
 
           <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
 
@@ -150,31 +184,6 @@ export default function Sidebar() {
             </ul>
           </div>
 
-          <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-
-          {/* Próximamente */}
-          <div>
-            <p
-              className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest"
-              style={{ color: 'var(--muted)' }}
-            >
-              Próximamente
-            </p>
-            <ul className="space-y-0.5">
-              {INMOBILIARIAS.filter((inm) => !inm.active).map((inm) => (
-                <li key={inm.key}>
-                  <div
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm opacity-40 cursor-not-allowed select-none"
-                    style={{ color: 'var(--muted)' }}
-                  >
-                    <BuildingIcon />
-                    <span className="flex-1">{inm.name}</span>
-                    <LockIcon />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </nav>
 

@@ -1,16 +1,33 @@
 @import "tailwindcss";
 
-/* ── Semantic color tokens ── */
+/* ── Semantic color tokens — dark (default) ── */
 :root {
   --background: #0f1117;
-  --foreground: #e4e6f0;
+  --foreground: #ffffff;
   --card: #171923;
-  --muted: #525a78;
-  --border: #222638;
+  --muted: #b8c4e0;
+  --border: #2e3555;
   --accent: #6366f1;
   --accent-hover: #5254cc;
   --danger: #ef4444;
   --success: #10b981;
+  --warning: #f59e0b;
+  --logo-filter: brightness(1.8) saturate(1.1);
+}
+
+/* ── Modo claro ── */
+[data-theme="light"] {
+  --background: #f1f4ff;
+  --foreground: #111827;
+  --card: #ffffff;
+  --muted: #64748b;
+  --border: #dde2f0;
+  --accent: #6366f1;
+  --accent-hover: #5254cc;
+  --danger: #dc2626;
+  --success: #059669;
+  --warning: #d97706;
+  --logo-filter: none;
 }
 
 @theme inline {
@@ -23,6 +40,7 @@
   --color-accent-hover: var(--accent-hover);
   --color-danger: var(--danger);
   --color-success: var(--success);
+  --color-warning: var(--warning);
 
   --font-display: var(--font-fraunces);
   --font-body: var(--font-hanken);

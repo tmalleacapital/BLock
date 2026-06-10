@@ -8,6 +8,7 @@ export interface BlockingRecord {
   rut: string;
   nombre: string;
   fecha: string;
+  asesorEmail?: string;
 }
 
 export function getHistory(): BlockingRecord[] {

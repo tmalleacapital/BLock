@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# historial de bloqueos (datos reales, no commitear)
+/data/

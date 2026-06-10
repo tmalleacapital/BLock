@@ -94,9 +94,9 @@ export function getFieldSchema(): FieldSchema {
         options: COMUNAS.map((c) => ({ value: c, label: c })),
       },
       { key: 'ciudad',     label: 'Ciudad',    type: 'text',           required: true },
-      { key: 'proyecto',   label: 'Proyecto',  type: 'cascade-parent', required: true },
-      { key: 'unidad',     label: 'Unidad',    type: 'cascade-child',  required: true },
-      { key: 'tipologia',  label: 'Tipología', type: 'cascade-auto',   required: true },
+      { key: 'proyecto',  label: 'Proyecto',  type: 'cascade-parent', required: true },
+      { key: 'unidad',    label: 'Unidad',    type: 'cascade-child',  required: true },
+      { key: 'tipologia', label: 'Tipología', type: 'cascade-auto',   required: true },
     ],
   };
 }

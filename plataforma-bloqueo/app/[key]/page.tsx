@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { getSchema, INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
+import { getSession, COOKIE_NAME } from '@/lib/auth';
 import FichaForm from '@/components/FichaForm';
 import type { UnidadEntry } from '@/lib/inmobiliarias/types';
 
@@ -7,9 +9,7 @@ interface Props {
   params: Promise<{ key: string }>;
 }
 
-export function generateStaticParams() {
-  return INMOBILIARIAS.map((inm) => ({ key: inm.key }));
-}
+export const dynamic = 'force-dynamic';
 
 export default async function InmobiliariaPage({ params }: Props) {
   const { key } = await params;
@@ -17,6 +17,10 @@ export default async function InmobiliariaPage({ params }: Props) {
   const schema = getSchema(key);
 
   if (!inm || !schema) notFound();
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE_NAME)?.value;
+  const asesorEmail = token ? (getSession(token)?.email ?? '') : '';
 
   let stockData: Record<string, UnidadEntry[]> | undefined;
   try {
@@ -37,7 +41,8 @@ export default async function InmobiliariaPage({ params }: Props) {
       stockData = await fetchVivaStock();
     } else if (key === 'fundamenta') {
       const { fetchFundamentaStock } = await import('@/lib/inmobiliarias/fundamenta/stock');
-      stockData = await fetchFundamentaStock();
+      const raw = await fetchFundamentaStock();
+      if (Object.keys(raw).length > 0) stockData = raw;
     }
   } catch {
     // ORED API no disponible — el formulario carga sin datos de stock
@@ -73,7 +78,14 @@ export default async function InmobiliariaPage({ params }: Props) {
       </header>
 
       <main className="flex-1 px-8 py-7">
-        <FichaForm inmobiliariaKey={key} inmobiliariaName={inm.name} schema={schema} stockData={stockData} />
+        <FichaForm
+          inmobiliariaKey={key}
+          inmobiliariaName={inm.name}
+          schema={schema}
+          stockData={stockData}
+          emailRecipients={inm.emailRecipients}
+          asesorEmail={asesorEmail}
+        />
       </main>
     </div>
   );

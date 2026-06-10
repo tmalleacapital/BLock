@@ -1,10 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
-import { getHistory } from '@/lib/history';
-import type { BlockingRecord } from '@/lib/history';
+import type { BlockingRecord } from '@/lib/historyServer';
+
+interface PortalStats {
+  waitingCount: number;
+  processing: boolean;
+}
+
+interface QueueData {
+  portals: Record<string, PortalStats>;
+  totalWaiting: number;
+}
 
 function isToday(iso: string): boolean {
   const d = new Date(iso);
@@ -16,22 +25,12 @@ function isToday(iso: string): boolean {
   );
 }
 
-function isThisWeek(iso: string): boolean {
-  const d = new Date(iso);
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setHours(0, 0, 0, 0);
-  const day = now.getDay();
-  startOfWeek.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-  return d >= startOfWeek && d <= now;
-}
-
 function formatDate(iso: string): string {
   const d = new Date(iso);
   if (isToday(iso)) {
     return `Hoy ${d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
   }
-  return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' });
 }
 
 function getGreeting(): string {
@@ -40,90 +39,6 @@ function getGreeting(): string {
   if (h < 19) return 'Buenas tardes.';
   return 'Buenas noches.';
 }
-
-function ArrowIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14M12 5l7 7-7 7" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-
-function LayersIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-    </svg>
-  );
-}
-
-function BuildingIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-      <path d="M9 22V12h6v10" />
-      <circle cx="9" cy="7" r=".5" fill="currentColor" />
-      <circle cx="15" cy="7" r=".5" fill="currentColor" />
-    </svg>
-  );
-}
-
-const STAT_CARDS = [
-  {
-    key: 'today',
-    label: 'Hoy',
-    description: 'Bloqueos de hoy',
-    icon: <SunIcon />,
-    iconBg: '#0d9488',
-  },
-  {
-    key: 'week',
-    label: 'Esta semana',
-    description: 'En los últimos 7 días',
-    icon: <CalendarIcon />,
-    iconBg: '#3b82f6',
-  },
-  {
-    key: 'total',
-    label: 'Total',
-    description: 'Historial completo',
-    icon: <LayersIcon />,
-    iconBg: '#8b5cf6',
-  },
-];
 
 function InmobiliariaInitials({ name }: { name: string }) {
   const initials = name
@@ -135,9 +50,9 @@ function InmobiliariaInitials({ name }: { name: string }) {
     .toUpperCase();
   return (
     <div
-      className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0"
+      className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--accent) 18%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--accent) 15%, transparent)',
         color: 'var(--accent)',
       }}
     >
@@ -146,37 +61,120 @@ function InmobiliariaInitials({ name }: { name: string }) {
   );
 }
 
+function PortalStatusBadge({ stats }: { stats?: PortalStats }) {
+  if (!stats || (!stats.processing && stats.waitingCount === 0)) {
+    return (
+      <span className="text-xs" style={{ color: 'var(--muted)' }}>
+        Libre
+      </span>
+    );
+  }
+  if (stats.processing) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--success) 12%, transparent)',
+          color: 'var(--success)',
+        }}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+        Procesando
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full"
+      style={{
+        backgroundColor: 'color-mix(in srgb, var(--warning) 12%, transparent)',
+        color: 'var(--warning)',
+      }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+      {stats.waitingCount} en cola
+    </span>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+const cardShadow = '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)';
+
 export default function HomePage() {
   const [history, setHistory] = useState<BlockingRecord[]>([]);
   const [greeting, setGreeting] = useState('');
+  const [queueData, setQueueData] = useState<QueueData>({ portals: {}, totalWaiting: 0 });
+  const [search, setSearch] = useState('');
+
+  const pollQueue = useCallback(async () => {
+    try {
+      const res = await fetch('/api/queue-status');
+      if (res.ok) setQueueData(await res.json() as QueueData);
+    } catch { /* ignore */ }
+  }, []);
+
+  const refreshHistory = useCallback(async () => {
+    try {
+      const res = await fetch('/api/history');
+      if (res.ok) setHistory(await res.json() as BlockingRecord[]);
+    } catch { /* ignore */ }
+  }, []);
 
   useEffect(() => {
     setGreeting(getGreeting());
-    const refresh = () => setHistory(getHistory());
-    refresh();
-    document.addEventListener('visibilitychange', refresh);
-    return () => document.removeEventListener('visibilitychange', refresh);
-  }, []);
+    void refreshHistory();
+    const onVisible = () => { if (document.visibilityState === 'visible') void refreshHistory(); };
+    const onUpdated = () => void refreshHistory();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('history:updated', onUpdated);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('history:updated', onUpdated);
+    };
+  }, [refreshHistory]);
+
+  useEffect(() => {
+    pollQueue();
+    const interval = setInterval(pollQueue, 3000);
+    return () => clearInterval(interval);
+  }, [pollQueue]);
 
   const countToday = history.filter((r) => isToday(r.fecha)).length;
-  const countWeek = history.filter((r) => isThisWeek(r.fecha)).length;
-  const countTotal = history.length;
-
-  const statValues: Record<string, number> = {
-    today: countToday,
-    week: countWeek,
-    total: countTotal,
-  };
-
   const active = INMOBILIARIAS.filter((inm) => inm.active);
-  const inactive = INMOBILIARIAS.filter((inm) => !inm.active);
+
+  const filteredHistory = search.trim()
+    ? history.filter((rec) => {
+        const q = search.toLowerCase();
+        const rutNorm = rec.rut.replace(/[.\-]/g, '').toLowerCase();
+        const qNorm = q.replace(/[.\-]/g, '');
+        return (
+          rutNorm.includes(qNorm) ||
+          rec.nombre.toLowerCase().includes(q) ||
+          rec.inmobiliariaName.toLowerCase().includes(q)
+        );
+      })
+    : history;
+
+  const activeQueuePortals = active.filter((inm) => {
+    const s = queueData.portals[inm.key];
+    return s && (s.processing || s.waitingCount > 0);
+  });
+  const hasActiveQueue = activeQueuePortals.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col">
 
       {/* Header */}
       <header
-        className="sticky top-0 z-10 px-8 py-4 border-b flex items-center gap-3"
+        className="sticky top-0 z-10 px-8 py-4 border-b"
         style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
       >
         <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
@@ -184,238 +182,285 @@ export default function HomePage() {
         </p>
       </header>
 
-      <main className="flex-1 px-8 py-8 space-y-8">
+      <main className="flex-1 flex flex-col lg:flex-row gap-6 px-8 py-8 min-h-0">
 
-        {/* Greeting */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
-            {greeting || 'Bienvenido.'}
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-            Este es tu resumen de B-Lock. Estás en{' '}
-            <span className="font-semibold" style={{ color: 'var(--foreground)' }}>Capital Inteligente</span>.
-          </p>
-        </div>
+        {/* ── Columna principal ── */}
+        <div className="flex-1 min-w-0 space-y-6">
 
-        {/* Hero card */}
-        <Link
-          href={`/${active[0]?.key ?? 'imagina'}`}
-          className="block rounded-2xl p-7 transition-opacity hover:opacity-90"
-          style={{
-            background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #6d28d9 100%)',
-          }}
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0110 0v4" />
-                </svg>
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-white/70">
-                  Bloqueos
-                </p>
-              </div>
-              <p className="text-xl font-bold text-white leading-snug">
-                Registra un cliente en minutos
-              </p>
-              <p className="mt-1.5 text-sm text-white/70 max-w-sm">
-                Selecciona un portal y completa el formulario. La automatización se ejecuta al instante.
-              </p>
-            </div>
-            <div className="text-white/60 shrink-0 mt-1">
-              <ArrowIcon />
-            </div>
+          {/* Saludo */}
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <h1 className="text-3xl font-bold tracking-tight" style={{ color: 'var(--foreground)' }}>
+              {greeting || 'Bienvenido.'}
+            </h1>
+            <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
+              Panel operacional de{' '}
+              <span className="font-semibold" style={{ color: 'var(--foreground)' }}>Capital Inteligente</span>.
+            </p>
           </div>
-          <div className="mt-5">
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white">
-              Ir al portal
-              <ArrowIcon />
-            </span>
-          </div>
-        </Link>
 
-        {/* Stat cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {STAT_CARDS.map((s) => (
+          {/* Stats */}
+          <div
+            className="grid grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
+            style={{ animationDelay: '50ms' }}
+          >
+            {/* Hoy */}
             <div
-              key={s.key}
-              className="rounded-2xl border p-5 flex flex-col gap-3"
-              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+              className="rounded-2xl border p-5 space-y-2"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                Hoy
+              </p>
+              <p className="text-4xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>
+                {countToday}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>Bloqueos del día</p>
+            </div>
+
+            {/* En cola — live */}
+            <div
+              className="rounded-2xl border p-5 space-y-2 transition-colors duration-500"
+              style={{
+                borderColor: queueData.totalWaiting > 0
+                  ? 'color-mix(in srgb, var(--warning) 40%, transparent)'
+                  : 'var(--border)',
+                backgroundColor: queueData.totalWaiting > 0
+                  ? 'color-mix(in srgb, var(--warning) 5%, var(--card))'
+                  : 'var(--card)',
+                boxShadow: cardShadow,
+              }}
             >
               <div className="flex items-center justify-between">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${s.iconBg}22`, color: s.iconBg }}
-                >
-                  {s.icon}
-                </div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
-                  {s.label}
+                  En cola
                 </p>
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: queueData.totalWaiting > 0 ? 'var(--warning)' : 'var(--muted)' }}
+                />
               </div>
-              <div>
-                <p className="text-4xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>
-                  {statValues[s.key]}
-                </p>
-                <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>{s.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Portales activos */}
-        <section>
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>
-            Portales activos
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {active.map((inm) => (
-              <Link
-                key={inm.key}
-                href={`/${inm.key}`}
-                className="rounded-2xl border p-5 flex flex-col gap-4 transition-all duration-150"
-                style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--accent)';
-                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor =
-                    'color-mix(in srgb, var(--accent) 6%, var(--card))';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)';
-                  (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'var(--card)';
-                }}
+              <p
+                className="text-4xl font-bold tabular-nums"
+                style={{ color: queueData.totalWaiting > 0 ? 'var(--warning)' : 'var(--foreground)' }}
               >
-                <div className="flex items-center justify-between">
-                  <InmobiliariaInitials name={inm.name} />
-                  <span
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: 'color-mix(in srgb, var(--success) 14%, transparent)',
-                      color: 'var(--success)',
-                    }}
-                  >
-                    Activo
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{inm.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>Portal de bloqueo</p>
-                </div>
-                <div
-                  className="flex items-center gap-1.5 text-xs font-semibold"
-                  style={{ color: 'var(--accent)' }}
-                >
-                  <BuildingIcon />
-                  Ir al portal
-                  <span className="ml-auto"><ArrowIcon /></span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+                {queueData.totalWaiting}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>Solicitudes en espera</p>
+            </div>
 
-        {/* Próximamente */}
-        {inactive.length > 0 && (
-          <section>
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>
-              Próximamente
+            {/* Total */}
+            <div
+              className="rounded-2xl border p-5 space-y-2"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                Total
+              </p>
+              <p className="text-4xl font-bold tabular-nums" style={{ color: 'var(--foreground)' }}>
+                {history.length}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>Historial completo</p>
+            </div>
+          </div>
+
+          {/* Lista de portales */}
+          <section
+            className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            style={{ animationDelay: '100ms' }}
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
+              Portales activos
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {inactive.map((inm) => (
-                <div
+            <div
+              className="rounded-2xl border overflow-hidden"
+              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+            >
+              {active.map((inm, idx) => (
+                <Link
                   key={inm.key}
-                  className="rounded-2xl border p-5 flex flex-col gap-4 opacity-40 cursor-not-allowed select-none"
-                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+                  href={`/${inm.key}`}
+                  className="flex items-center gap-4 px-5 py-4 transition-colors duration-150"
+                  style={{
+                    borderTop: idx > 0 ? `1px solid var(--border)` : undefined,
+                    color: 'inherit',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor =
+                      'color-mix(in srgb, var(--accent) 4%, transparent)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'transparent';
+                  }}
                 >
-                  <div className="flex items-center justify-between">
-                    <InmobiliariaInitials name={inm.name} />
-                    <span
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"
-                      style={{
-                        backgroundColor: 'color-mix(in srgb, var(--muted) 14%, transparent)',
-                        color: 'var(--muted)',
-                      }}
-                    >
-                      <LockIcon />
-                      Pronto
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{inm.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--muted)' }}>En desarrollo</p>
-                  </div>
-                </div>
+                  <InmobiliariaInitials name={inm.name} />
+                  <span className="flex-1 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                    {inm.name}
+                  </span>
+                  <PortalStatusBadge stats={queueData.portals[inm.key]} />
+                  <span style={{ color: 'var(--muted)' }}>
+                    <ArrowIcon />
+                  </span>
+                </Link>
               ))}
             </div>
           </section>
-        )}
 
-        {/* Actividad reciente */}
-        <section>
-          <p className="text-[11px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--muted)' }}>
-            Actividad reciente
-          </p>
-          <div
-            className="rounded-2xl border overflow-hidden"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
-          >
-            {history.length === 0 ? (
-              <div className="px-6 py-12 text-center">
-                <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                  No hay bloqueos registrados aún. Aparecerán aquí después de cada bloqueo exitoso.
+        </div>
+
+        {/* ── Rail derecho ── */}
+        <div
+          className="w-full lg:w-72 shrink-0 space-y-4 animate-in fade-in slide-in-from-right-3 duration-400"
+        >
+
+          {/* Cola activa (solo cuando hay actividad) */}
+          {hasActiveQueue && (
+            <div
+              className="rounded-2xl border p-5 animate-in fade-in zoom-in-95 duration-300"
+              style={{
+                borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)',
+                backgroundColor: 'color-mix(in srgb, var(--warning) 4%, var(--card))',
+                boxShadow: cardShadow,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--warning)' }} />
+                <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--warning)' }}>
+                  Cola activa
                 </p>
               </div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['RUT', 'Nombre', 'Inmobiliaria', 'Fecha'].map((col) => (
-                      <th
-                        key={col}
-                        className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest"
-                        style={{ color: 'var(--muted)' }}
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.slice(0, 20).map((rec, idx) => (
-                    <tr
-                      key={rec.id}
-                      style={{ borderTop: idx === 0 ? undefined : '1px solid var(--border)' }}
+              <div className="space-y-3">
+                {activeQueuePortals.map((inm) => {
+                  const s = queueData.portals[inm.key];
+                  return (
+                    <Link
+                      key={inm.key}
+                      href={`/${inm.key}`}
+                      className="flex items-center gap-3 transition-opacity hover:opacity-80"
+                      style={{ textDecoration: 'none', color: 'inherit' }}
                     >
-                      <td className="px-5 py-3.5 font-mono text-xs tabular-nums" style={{ color: 'var(--foreground)' }}>
-                        {rec.rut}
-                      </td>
-                      <td className="px-5 py-3.5 font-medium" style={{ color: 'var(--foreground)' }}>
-                        {rec.nombre}
-                      </td>
-                      <td className="px-5 py-3.5">
+                      <InmobiliariaInitials name={inm.name} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+                          {inm.name}
+                        </p>
+                        <p className="text-xs" style={{ color: s.processing ? 'var(--success)' : 'var(--warning)' }}>
+                          {s.processing
+                            ? 'Automatizando...'
+                            : `${s.waitingCount} solicitud${s.waitingCount !== 1 ? 'es' : ''} en espera`}
+                        </p>
+                      </div>
+                      {s.processing && (
                         <span
-                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                          style={{
-                            backgroundColor: 'color-mix(in srgb, var(--accent) 14%, transparent)',
-                            color: 'var(--accent)',
-                          }}
+                          className="w-3 h-3 border-2 rounded-full animate-spin shrink-0"
+                          style={{ borderColor: 'var(--success)', borderTopColor: 'transparent' }}
+                        />
+                      )}
+                      {!s.processing && (
+                        <span
+                          className="text-xs font-bold tabular-nums shrink-0"
+                          style={{ color: 'var(--warning)' }}
                         >
-                          {rec.inmobiliariaName}
+                          {s.waitingCount}
                         </span>
-                      </td>
-                      <td className="px-5 py-3.5 text-xs tabular-nums" style={{ color: 'var(--muted)' }}>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Historial reciente */}
+          <div
+            className="rounded-2xl border p-5"
+            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
+          >
+            <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
+              Actividad reciente
+            </p>
+
+            {history.length > 0 && (
+              <div className="relative mb-3">
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: 'var(--muted)' }}
+                >
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por RUT, nombre…"
+                  className="w-full rounded-lg border pl-8 pr-3 py-2 text-xs focus:outline-none focus:ring-2"
+                  style={{
+                    borderColor: 'var(--border)',
+                    backgroundColor: 'var(--background)',
+                    color: 'var(--foreground)',
+                    // @ts-expect-error CSS custom property
+                    '--tw-ring-color': 'color-mix(in srgb, var(--accent) 22%, transparent)',
+                  }}
+                />
+              </div>
+            )}
+
+            {history.length === 0 ? (
+              <p className="text-sm text-center py-6" style={{ color: 'var(--muted)' }}>
+                Los bloqueos exitosos aparecerán aquí.
+              </p>
+            ) : filteredHistory.length === 0 ? (
+              <p className="text-xs text-center py-4" style={{ color: 'var(--muted)' }}>
+                Sin resultados para &ldquo;{search}&rdquo;.
+              </p>
+            ) : (
+              <div className="space-y-0">
+                {filteredHistory.slice(0, 12).map((rec, idx) => (
+                  <div
+                    key={rec.id}
+                    className="flex items-start gap-3 py-3"
+                    style={{ borderTop: idx > 0 ? `1px solid var(--border)` : undefined }}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                      style={{ backgroundColor: 'var(--success)' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-mono tabular-nums font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+                        {rec.rut}
+                      </p>
+                      <p className="text-xs truncate" style={{ color: 'var(--muted)' }}>
+                        {rec.nombre || '—'}
+                      </p>
+                      {rec.asesorEmail && (
+                        <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--muted)', opacity: 0.7 }}>
+                          {rec.asesorEmail}
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span
+                        className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+                          color: 'var(--accent)',
+                        }}
+                      >
+                        {rec.inmobiliariaName}
+                      </span>
+                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>
                         {formatDate(rec.fecha)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        </section>
 
+        </div>
       </main>
     </div>
   );

@@ -19,23 +19,24 @@ export interface InmobiliariaEntry {
   name: string;
   enabled: boolean;
   active: boolean;
+  emailRecipients?: string[];
 }
 
 export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'imagina',         name: 'Imagina',          enabled: true, active: true  },
   { key: 'ingevec',         name: 'Ingevec',          enabled: true, active: false },
-  { key: 'sento',           name: 'Sento',            enabled: true, active: true  },
+  { key: 'sento',           name: 'Sento',            enabled: true, active: true,  emailRecipients: ['mvarela@sento.cl'] },
   { key: 'larrain-prieto',  name: 'Larraín Prieto',   enabled: true, active: false },
   { key: 'vicuna-mackenna', name: 'Vicuña Mackenna',  enabled: true, active: false },
   { key: 'euro',            name: 'Euro',             enabled: true, active: true  },
   { key: 'simonetti',       name: 'Simonetti',        enabled: true, active: true  },
-  { key: 'ecasa',           name: 'Ecasa',            enabled: true, active: true  },
+  { key: 'ecasa',           name: 'Ecasa',            enabled: true, active: true,  emailRecipients: ['canalinversiones@ecasa.cl'] },
   { key: 'deisa',           name: 'Deisa',            enabled: true, active: false },
   { key: 'norte-verde',     name: 'Norte Verde',      enabled: true, active: false },
-  { key: 'paz',             name: 'Paz',              enabled: true, active: true  },
-  { key: 'fai',             name: 'FAI',              enabled: true, active: true  },
-  { key: 'viva',            name: 'Viva',             enabled: true, active: true  },
-  { key: 'fundamenta',     name: 'Fundamenta',       enabled: true, active: true  },
+  { key: 'paz',             name: 'Paz',              enabled: true, active: true,  emailRecipients: ['issys.ferrer@pazcorp.cl', 'fernando.florindo@pazcorp.cl'] },
+  { key: 'fai',             name: 'FAI',              enabled: true, active: true,  emailRecipients: ['Francisco.flores@flesan.cl'] },
+  { key: 'viva',            name: 'Viva',             enabled: true, active: true,  emailRecipients: ['ventas@iviva.cl'] },
+  { key: 'fundamenta',      name: 'Fundamenta',       enabled: true, active: true,  emailRecipients: ['andres.lopez@fundamenta.cl'] },
 ];
 
 export function getSchema(key: string): FieldSchema | undefined {
