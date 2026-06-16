@@ -1,0 +1,19 @@
+{
+  "name": "bloqueo-clientes-automatizacion",
+  "version": "1.0.0",
+  "description": "Automatización para bloqueo de clientes",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm --prefix plataforma-bloqueo run dev",
+    "build": "npm --prefix plataforma-bloqueo run build",
+    "start": "npm --prefix plataforma-bloqueo run start",
+    "lint": "npm --prefix plataforma-bloqueo run lint",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "automatizacion",
+    "script"
+  ],
+  "author": "Departamento TI",
+  "license": "ISC"
+}

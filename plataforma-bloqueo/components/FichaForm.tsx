@@ -161,6 +161,12 @@ function FieldInput({
   );
 }
 
+function maskEmail(email: string): string {
+  const at = email.indexOf('@');
+  if (at === -1) return email;
+  return `*****${email.slice(at)}`;
+}
+
 function getErrorHint(message: string): string {
   if (/autenticad/i.test(message)) return 'Tu sesión expiró — cierra sesión y vuelve a ingresar.';
   if (/reiniciado|disponible/i.test(message)) return 'El servidor se reinició. Vuelve a enviar el formulario.';
@@ -705,7 +711,7 @@ export default function FichaForm({
               <div className="flex gap-1.5">
                 <span className="shrink-0 font-semibold" style={{ color: 'var(--muted)', minWidth: '38px' }}>Para:</span>
                 <span className="break-all" style={{ color: 'var(--foreground)' }}>
-                  {emailRecipients!.join(', ')}
+                  {emailRecipients!.map(maskEmail).join(', ')}
                 </span>
               </div>
               <div className="flex gap-1.5">

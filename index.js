@@ -1,0 +1,1 @@
+console.log("¡El servidor y el script están funcionando correctamente!");

@@ -8,6 +8,7 @@ Uso con datos:   python "Bloqueo Cliente Simonetti.py" '{"rut":"...", ...}'
 
 import sys
 import json
+import re
 import datetime
 import unicodedata
 import os
@@ -63,70 +64,6 @@ def vs_placeholder(page: Page, placeholder_fragment: str, opcion: str) -> None:
     inp.fill(opcion)
     page.wait_for_timeout(300)
     page.locator('.vs__dropdown-option').filter(has_text=opcion).first.click()
-    page.wait_for_timeout(200)
-
-
-def vs_etiqueta(page: Page, label_text: str, opcion: str) -> None:
-    """Selecciona en un vue-select buscando su etiqueta en el DOM."""
-    opened = page.evaluate(
-        """(text) => {
-            for (const el of document.querySelectorAll('label, legend, .col-form-label, span, p')) {
-                const t = el.textContent.trim().replace(/\*/g, '').trim().toLowerCase();
-                if (t === text.toLowerCase()) {
-                    let node = el;
-                    for (let i = 0; i < 6; i++) {
-                        node = node.parentElement;
-                        if (!node) break;
-                        const inp = node.querySelector('input.vs__search');
-                        if (inp) {
-                            inp.scrollIntoView({ block: 'center' });
-                            inp.click();
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }""",
-        label_text,
-    )
-    if not opened:
-        raise ValueError(f'Vue-select con etiqueta "{label_text}" no encontrado')
-    page.wait_for_timeout(300)
-    page.keyboard.type(opcion, delay=50)
-    page.wait_for_timeout(400)
-    page.locator('.vs__dropdown-option').filter(has_text=opcion).first.click()
-    page.wait_for_timeout(200)
-
-
-def vs_etiqueta_nth(page: Page, label_text: str, n: int) -> None:
-    """Selecciona la n-ésima opción (1-indexed) de un vue-select por etiqueta."""
-    opened = page.evaluate(
-        """(text) => {
-            for (const el of document.querySelectorAll('label, legend, .col-form-label, span, p')) {
-                const t = el.textContent.trim().replace(/\*/g, '').trim().toLowerCase();
-                if (t === text.toLowerCase()) {
-                    let node = el;
-                    for (let i = 0; i < 6; i++) {
-                        node = node.parentElement;
-                        if (!node) break;
-                        const inp = node.querySelector('input.vs__search');
-                        if (inp) {
-                            inp.scrollIntoView({ block: 'center' });
-                            inp.click();
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-        }""",
-        label_text,
-    )
-    if not opened:
-        raise ValueError(f'Vue-select con etiqueta "{label_text}" no encontrado')
-    page.wait_for_timeout(400)
-    page.locator('.vs__dropdown-option').nth(n - 1).click()
     page.wait_for_timeout(200)
 
 
@@ -382,25 +319,26 @@ def bloquear_cliente(data: dict) -> dict:
                 page.wait_for_timeout(400)
 
                 # Comuna se habilita tras seleccionar región (excluir el input disabled)
+                _comuna = data.get("comuna", "")
                 comuna_inp = page.locator('input.vs__search[placeholder="Seleccione Comuna"]:not([disabled])')
                 comuna_inp.wait_for(state="visible", timeout=8_000)
                 comuna_inp.scroll_into_view_if_needed()
                 comuna_inp.click()
                 page.wait_for_timeout(400)
-                page.locator('.vs__dropdown-option').filter(has_text=data.get("comuna", "")).first.click()
+                page.keyboard.type(_comuna, delay=50)
+                page.wait_for_timeout(500)
+                page.locator('.vs__dropdown-option').filter(
+                    has_text=re.compile(rf'^\s*{re.escape(_comuna)}\s*$')
+                ).first.click()
                 page.wait_for_timeout(200)
 
                 rellenar('[data-cy="create-customer-city"]', data.get("ciudad", ""))
 
-                # ── Medio de información → REFERIDO ───────────────────────────
-                vs_etiqueta(page, "Medio de información", "REFERIDO")
-
-                # ── Tipo contacto → VISITA ────────────────────────────────────
-                vs_etiqueta(page, "Tipo contacto", "VISITA")
-
                 # ── Guardar cliente nuevo ─────────────────────────────────────
                 save = page.locator('button[data-cy="save_btn"]')
+                save.wait_for(state="visible", timeout=10_000)
                 save.scroll_into_view_if_needed()
+                page.wait_for_timeout(600)
                 save.click()
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(1_000)
@@ -408,14 +346,19 @@ def bloquear_cliente(data: dict) -> dict:
             elif not quote_ya_visible:
                 # Cliente existe con formulario pre-rellenado — guardar para llegar al perfil
                 save = page.locator('button[data-cy="save_btn"]')
+                save.wait_for(state="visible", timeout=10_000)
                 save.scroll_into_view_if_needed()
+                page.wait_for_timeout(600)
                 save.click()
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(1_000)
 
             # ── Cotizar (cliente nuevo o existente) ────────────────────────────
-            page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=10_000)
-            page.locator('button[data-cy="quote_btn"]').click()
+            quote_btn = page.locator('button[data-cy="quote_btn"]')
+            quote_btn.wait_for(state="visible", timeout=15_000)
+            quote_btn.scroll_into_view_if_needed()
+            page.wait_for_timeout(500)
+            quote_btn.click()
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(800)
 
