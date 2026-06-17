@@ -141,7 +141,7 @@ def placeholder_select_texto(page: Page, label: str, opcion: str) -> None:
 def bloquear_cliente(data: dict) -> dict:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, slow_mo=350)
-        context = browser.new_context(viewport={"width": 1920, "height": 1080})
+        context = browser.new_context(viewport={"width": 1920, "height": 1080}, locale='es-CL')
         page = context.new_page()
 
         try:
