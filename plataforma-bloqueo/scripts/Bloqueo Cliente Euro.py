@@ -377,13 +377,14 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
 
-            import sys as _sys
-            _sys.stderr.write(f"[DEBUG] URL tras quote_btn: {page.url}\n")
-            _sys.stderr.write(f"[DEBUG] placeholderInputText count: {page.locator('div.placeholderInputText').count()}\n")
-            _sys.stderr.flush()
-
             # ── Proyecto → Vicente Valdés ──────────────────────────────────────
-            placeholder_select_texto(page, "Proyecto", "Vicente Valdés")
+            try:
+                placeholder_select_texto(page, "Proyecto", "Vicente Valdés")
+            except Exception as _e:
+                _url = page.url
+                _count = page.locator('div.placeholderInputText').count()
+                _body = page.evaluate("() => document.body.innerText").replace('\n', ' ')[:600]
+                raise Exception(f"[FALLO Proyecto] URL={_url} | placeholders={_count} | body={_body}")
 
             # ── Tipo de bien → Departamento (provoca mini recarga) ─────────────
             placeholder_select_texto(page, "Tipo de bien", "Departamento")
