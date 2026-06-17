@@ -91,7 +91,10 @@ def bloquear_cliente(data: dict) -> dict:
                 if not menu_frame:
                     page.wait_for_timeout(300)
             if not menu_frame:
-                raise ValueError("No apareció el frame MenuPrivilegioUsuario.aspx")
+                frame_urls = [f.url for f in page.frames]
+                page_url = page.url
+                body = page.evaluate("() => document.body?.innerText || ''").replace('\n',' ')[:400]
+                raise ValueError(f"No apareció el frame MenuPrivilegioUsuario.aspx | page={page_url} | frames={frame_urls} | body={body}")
 
             visita_loc = menu_frame.locator('a.verdana10_azulnormal[href*="visita_mov.asp"]')
             visita_loc.wait_for(state="visible", timeout=30_000)
