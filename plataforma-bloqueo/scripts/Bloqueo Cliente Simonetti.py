@@ -88,7 +88,7 @@ def vs_placeholder_fuzzy(page: Page, placeholder_fragment: str, opcion: str) -> 
     page.wait_for_timeout(600)
 
     opts = page.locator('.vs__dropdown-option')
-    opts.first.wait_for(state="visible", timeout=8_000)
+    opts.first.wait_for(state="visible", timeout=20_000)
     page.wait_for_timeout(200)
 
     total = opts.count()
@@ -113,12 +113,12 @@ def vs_placeholder_fuzzy(page: Page, placeholder_fragment: str, opcion: str) -> 
 def placeholder_select_nth(page: Page, label: str, n: int) -> None:
     """Abre un div.placeholderInputText (vue-select) y elige la n-ésima opción (1-indexed)."""
     tgt = page.locator('div.placeholderInputText').filter(has_text=label).first
-    tgt.wait_for(state="visible", timeout=10_000)
+    tgt.wait_for(state="visible", timeout=30_000)
     tgt.scroll_into_view_if_needed()
     tgt.click()
     page.wait_for_timeout(500)
     opt = page.locator('li.vs__dropdown-option').nth(n - 1)
-    opt.wait_for(state="visible", timeout=8_000)
+    opt.wait_for(state="visible", timeout=20_000)
     opt.scroll_into_view_if_needed()
     opt.click()
     page.wait_for_timeout(200)
@@ -127,12 +127,12 @@ def placeholder_select_nth(page: Page, label: str, n: int) -> None:
 def placeholder_select_texto(page: Page, label: str, opcion: str) -> None:
     """Abre un div.placeholderInputText (vue-select) y elige opción por texto."""
     tgt = page.locator('div.placeholderInputText').filter(has_text=label).first
-    tgt.wait_for(state="visible", timeout=10_000)
+    tgt.wait_for(state="visible", timeout=30_000)
     tgt.scroll_into_view_if_needed()
     tgt.click()
     page.wait_for_timeout(500)
     opt = page.locator('li.vs__dropdown-option').filter(has_text=opcion).first
-    opt.wait_for(state="visible", timeout=8_000)
+    opt.wait_for(state="visible", timeout=20_000)
     opt.scroll_into_view_if_needed()
     opt.click()
     page.wait_for_timeout(200)
@@ -152,9 +152,9 @@ def bloquear_cliente(data: dict) -> dict:
 
             # ── 2. CAPTCHA Altcha (prueba matemática — el browser la resuelve) ──
             chk = page.locator('.altcha-checkbox input[type="checkbox"]')
-            chk.wait_for(state="visible", timeout=10_000)
+            chk.wait_for(state="visible", timeout=30_000)
             chk.scroll_into_view_if_needed()
-            page.wait_for_timeout(800)
+            page.wait_for_timeout(2_000)
             chk.evaluate("el => el.click()")
             page.wait_for_function(
                 '() => { const el = document.querySelector(".altcha-checkbox input[type=\'checkbox\']"); return el ? el.checked : false; }',
@@ -166,12 +166,12 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_load_state("networkidle")
 
             # ── 4. Ir a Clientes ───────────────────────────────────────────────
-            page.locator('a[href="/customers"]').wait_for(state="visible", timeout=10_000)
+            page.locator('a[href="/customers"]').wait_for(state="visible", timeout=30_000)
             page.locator('a[href="/customers"]').click()
             page.wait_for_load_state("networkidle")
 
             # ── 5. Crear cliente ───────────────────────────────────────────────
-            page.locator('button[data-cy="button-create-customer"]').wait_for(state="visible", timeout=10_000)
+            page.locator('button[data-cy="button-create-customer"]').wait_for(state="visible", timeout=30_000)
             page.locator('button[data-cy="button-create-customer"]').click()
             page.wait_for_load_state("networkidle")
             # Esperar a que el b-overlay aparezca y luego desaparezca
@@ -191,7 +191,7 @@ def bloquear_cliente(data: dict) -> dict:
                 loc.click()
                 loc.fill(valor)
 
-            page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=10_000)
+            page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=30_000)
 
             # Ingresar RUT — la página recarga y navega si el cliente ya existe
             url_antes = page.url
@@ -251,7 +251,7 @@ def bloquear_cliente(data: dict) -> dict:
                 page.wait_for_timeout(700)
 
                 opts = page.locator('.vs__dropdown-option')
-                opts.first.wait_for(state="visible", timeout=8_000)
+                opts.first.wait_for(state="visible", timeout=20_000)
                 page.wait_for_timeout(150)
 
                 total = opts.count()
@@ -307,7 +307,7 @@ def bloquear_cliente(data: dict) -> dict:
                 # ── Dirección del cliente ─────────────────────────────────────
                 page.locator('span.stepTitle', has_text="Dirección del cliente").click()
                 page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(800)
+                page.wait_for_timeout(2_000)
 
                 rellenar('[data-cy="create-customer-address"]', data.get("direccion", ""))
 
@@ -321,7 +321,7 @@ def bloquear_cliente(data: dict) -> dict:
                 # Comuna se habilita tras seleccionar región (excluir el input disabled)
                 _comuna = data.get("comuna", "")
                 comuna_inp = page.locator('input.vs__search[placeholder="Seleccione Comuna"]:not([disabled])')
-                comuna_inp.wait_for(state="visible", timeout=8_000)
+                comuna_inp.wait_for(state="visible", timeout=20_000)
                 comuna_inp.scroll_into_view_if_needed()
                 comuna_inp.click()
                 page.wait_for_timeout(400)
@@ -336,7 +336,7 @@ def bloquear_cliente(data: dict) -> dict:
 
                 # ── Guardar cliente nuevo ─────────────────────────────────────
                 save = page.locator('button[data-cy="save_btn"]')
-                save.wait_for(state="visible", timeout=10_000)
+                save.wait_for(state="visible", timeout=30_000)
                 save.scroll_into_view_if_needed()
                 page.wait_for_timeout(600)
                 save.click()
@@ -346,7 +346,7 @@ def bloquear_cliente(data: dict) -> dict:
             elif not quote_ya_visible:
                 # Cliente existe con formulario pre-rellenado — guardar para llegar al perfil
                 save = page.locator('button[data-cy="save_btn"]')
-                save.wait_for(state="visible", timeout=10_000)
+                save.wait_for(state="visible", timeout=30_000)
                 save.scroll_into_view_if_needed()
                 page.wait_for_timeout(600)
                 save.click()
@@ -360,7 +360,7 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_timeout(500)
             quote_btn.click()
             page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(800)
+            page.wait_for_timeout(2_000)
 
             # ── Proyecto → primera opción disponible ──────────────────────────
             placeholder_select_nth(page, "Proyecto", 1)
@@ -368,7 +368,7 @@ def bloquear_cliente(data: dict) -> dict:
             # ── Tipo de bien → Departamento (provoca mini recarga) ─────────────
             placeholder_select_texto(page, "Tipo de bien", "Departamento")
             page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(800)
+            page.wait_for_timeout(2_000)
 
             # ── N° de bien → primera opción ────────────────────────────────────
             placeholder_select_nth(page, "N° de bien", 1)
@@ -378,7 +378,7 @@ def bloquear_cliente(data: dict) -> dict:
             add_btn.scroll_into_view_if_needed()
             add_btn.click()
             page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(800)
+            page.wait_for_timeout(2_000)
 
             # ── Destino de compra → Inversión ──────────────────────────────────
             placeholder_select_texto(page, "Destino de compra", "Inversión")
