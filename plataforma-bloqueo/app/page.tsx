@@ -112,8 +112,6 @@ export default function HomePage() {
   const [history, setHistory] = useState<BlockingRecord[]>([]);
   const [greeting, setGreeting] = useState('');
   const [queueData, setQueueData] = useState<QueueData>({ portals: {}, totalWaiting: 0 });
-  const [search, setSearch] = useState('');
-
   const pollQueue = useCallback(async () => {
     try {
       const res = await fetch('/api/queue-status');
@@ -149,19 +147,6 @@ export default function HomePage() {
 
   const countToday = history.filter((r) => isToday(r.fecha)).length;
   const active = INMOBILIARIAS.filter((inm) => inm.active);
-
-  const filteredHistory = search.trim()
-    ? history.filter((rec) => {
-        const q = search.toLowerCase();
-        const rutNorm = rec.rut.replace(/[.\-]/g, '').toLowerCase();
-        const qNorm = q.replace(/[.\-]/g, '');
-        return (
-          rutNorm.includes(qNorm) ||
-          rec.nombre.toLowerCase().includes(q) ||
-          rec.inmobiliariaName.toLowerCase().includes(q)
-        );
-      })
-    : history;
 
   const activeQueuePortals = active.filter((inm) => {
     const s = queueData.portals[inm.key];
@@ -370,95 +355,6 @@ export default function HomePage() {
               </div>
             </div>
           )}
-
-          {/* Historial reciente */}
-          <div
-            className="rounded-2xl border p-5"
-            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-              Actividad reciente
-            </p>
-
-            {history.length > 0 && (
-              <div className="relative mb-3">
-                <svg
-                  width="12" height="12" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                  style={{ color: 'var(--muted)' }}
-                >
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar por RUT, nombre…"
-                  className="w-full rounded-lg border pl-8 pr-3 py-2 text-xs focus:outline-none focus:ring-2"
-                  style={{
-                    borderColor: 'var(--border)',
-                    backgroundColor: 'var(--background)',
-                    color: 'var(--foreground)',
-                    // @ts-expect-error CSS custom property
-                    '--tw-ring-color': 'color-mix(in srgb, var(--accent) 22%, transparent)',
-                  }}
-                />
-              </div>
-            )}
-
-            {history.length === 0 ? (
-              <p className="text-sm text-center py-6" style={{ color: 'var(--muted)' }}>
-                Los bloqueos exitosos aparecerán aquí.
-              </p>
-            ) : filteredHistory.length === 0 ? (
-              <p className="text-xs text-center py-4" style={{ color: 'var(--muted)' }}>
-                Sin resultados para &ldquo;{search}&rdquo;.
-              </p>
-            ) : (
-              <div className="space-y-0">
-                {filteredHistory.slice(0, 12).map((rec, idx) => (
-                  <div
-                    key={rec.id}
-                    className="flex items-start gap-3 py-3"
-                    style={{ borderTop: idx > 0 ? `1px solid var(--border)` : undefined }}
-                  >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                      style={{ backgroundColor: 'var(--success)' }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-mono tabular-nums font-semibold truncate" style={{ color: 'var(--foreground)' }}>
-                        {rec.rut}
-                      </p>
-                      <p className="text-xs truncate" style={{ color: 'var(--muted)' }}>
-                        {rec.nombre || '—'}
-                      </p>
-                      {rec.asesorEmail && (
-                        <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--muted)', opacity: 0.7 }}>
-                          {rec.asesorEmail}
-                        </p>
-                      )}
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <span
-                        className="inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                        style={{
-                          backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-                          color: 'var(--accent)',
-                        }}
-                      >
-                        {rec.inmobiliariaName}
-                      </span>
-                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>
-                        {formatDate(rec.fecha)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
         </div>
       </main>

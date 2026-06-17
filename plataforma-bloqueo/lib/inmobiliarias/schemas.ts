@@ -24,7 +24,7 @@ export interface InmobiliariaEntry {
 }
 
 export const INMOBILIARIAS: InmobiliariaEntry[] = [
-  { key: 'convet',          name: 'Convet',          enabled: true, active: true  },
+  { key: 'convet',          name: 'Convet',          enabled: true, active: true,  emailRecipients: ['vcorrales@convet.cl'] },
   { key: 'deisa',           name: 'Deisa',           enabled: true, active: false },
   { key: 'ecasa',           name: 'Ecasa',           enabled: true, active: true,  emailRecipients: ['canalinversiones@ecasa.cl'] },
   { key: 'euro',            name: 'Euro',            enabled: true, active: true  },

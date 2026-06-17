@@ -24,7 +24,10 @@ export default async function InmobiliariaPage({ params }: Props) {
 
   let stockData: Record<string, UnidadEntry[]> | undefined;
   try {
-    if (key === 'ecasa') {
+    if (key === 'convet') {
+      const { fetchConvetStock } = await import('@/lib/inmobiliarias/convet/stock');
+      stockData = await fetchConvetStock();
+    } else if (key === 'ecasa') {
       const { fetchEcasaStock } = await import('@/lib/inmobiliarias/ecasa/stock');
       stockData = await fetchEcasaStock();
     } else if (key === 'paz') {
