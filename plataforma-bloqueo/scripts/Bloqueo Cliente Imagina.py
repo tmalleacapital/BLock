@@ -76,13 +76,13 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_load_state("networkidle")
 
             # ── 2. Click en ícono de menú (Panel Control) ─────────────────────
-            page.locator('img[onclick*="jsMenuAPP"]').wait_for(state="visible", timeout=8_000)
+            page.locator('img[onclick*="jsMenuAPP"]').wait_for(state="visible", timeout=30_000)
             page.locator('img[onclick*="jsMenuAPP"]').click()
-            page.wait_for_timeout(1_200)
+            page.wait_for_timeout(3_000)
 
             # ── 3. Click en Visita — frame conocido: MenuPrivilegioUsuario.aspx ──
             menu_frame = None
-            deadline = time.time() + 10
+            deadline = time.time() + 30
             while time.time() < deadline and not menu_frame:
                 for frame in page.frames:
                     if "MenuPrivilegioUsuario" in frame.url:
@@ -94,13 +94,13 @@ def bloquear_cliente(data: dict) -> dict:
                 raise ValueError("No apareció el frame MenuPrivilegioUsuario.aspx")
 
             visita_loc = menu_frame.locator('a.verdana10_azulnormal[href*="visita_mov.asp"]')
-            visita_loc.wait_for(state="visible", timeout=8_000)
+            visita_loc.wait_for(state="visible", timeout=30_000)
             visita_loc.click()
             page.wait_for_load_state("networkidle")
 
             # ── 4. Click en Nuevo ──────────────────────────────────────────────
             nuevo_clicked = False
-            deadline = time.time() + 10
+            deadline = time.time() + 30
             while time.time() < deadline:
                 for frame in page.frames:
                     if "MenuPrivilegioUsuario" in frame.url:
@@ -124,7 +124,7 @@ def bloquear_cliente(data: dict) -> dict:
             # NO en la vista de lista/búsqueda que también tiene #rutpersona.
             page.wait_for_timeout(1_000)
             f = None
-            deadline = time.time() + 10
+            deadline = time.time() + 30
             while time.time() < deadline:
                 for frame in page.frames:
                     if "MenuPrivilegioUsuario" in frame.url:
@@ -233,7 +233,7 @@ def bloquear_cliente(data: dict) -> dict:
 
             # ── 11. Buscar frame con formulario de producto (#proyecto) ────────
             f2 = None
-            deadline = time.time() + 15
+            deadline = time.time() + 30
             while time.time() < deadline:
                 for frame in page.frames:
                     if "MenuPrivilegioUsuario" in frame.url:
