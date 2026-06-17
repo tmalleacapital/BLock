@@ -387,7 +387,14 @@ def bloquear_cliente(data: dict) -> dict:
             placeholder_select_texto(page, "Expectativa", "Muy Alta")
 
             # ── Medio de información → CAPITAL INTELIGENTE ────────────────────
-            placeholder_select_texto(page, "Medio de información", "CAPITAL INTELIGENTE")
+            try:
+                placeholder_select_texto(page, "Medio de información", "CAPITAL INTELIGENTE")
+            except Exception as _e:
+                _url = page.url
+                _count = page.locator('div.placeholderInputText').count()
+                _texts = [page.locator('div.placeholderInputText').nth(i).inner_text() for i in range(min(_count, 10))]
+                _body = page.evaluate("() => document.body.innerText").replace('\n', ' ')[:400]
+                raise Exception(f"[FALLO Medio] URL={_url} | placeholders={_count} | texts={_texts} | body={_body}")
 
             # ── Tipo contacto → VISITA ─────────────────────────────────────────
             placeholder_select_texto(page, "Tipo contacto", "VISITA")
