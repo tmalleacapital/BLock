@@ -347,8 +347,10 @@ def bloquear_cliente(data: dict) -> dict:
                 region_inp = page.locator('input.vs__search[placeholder*="Seleccione Región"]').first
                 region_inp.scroll_into_view_if_needed()
                 region_inp.click()
-                page.wait_for_timeout(400)
-                page.locator('.vs__dropdown-option').filter(has_text=data.get("region", "")).first.click()
+                _region = data.get("region", "")
+                page.keyboard.type(_region[:10], delay=50)
+                page.wait_for_timeout(500)
+                page.locator('.vs__dropdown-option').filter(has_text=_region).first.click()
                 page.wait_for_timeout(400)
 
                 # Comuna se habilita tras seleccionar región (excluir el input disabled)
