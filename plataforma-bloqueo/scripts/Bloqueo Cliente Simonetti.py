@@ -34,6 +34,13 @@ CREDS = {
     "clave":   os.environ['SIMONETTI_PASS'],
 }
 
+# Nombres oficiales → nombres cortos que usa el portal Simonetti
+REGION_PORTAL = {
+    "Región del Libertador General Bernardo O'Higgins": "Región de O'Higgins",
+    "Región de Aysén del General Carlos Ibáñez del Campo": "Región de Aysén",
+    "Región de Magallanes y de la Antártica Chilena": "Región de Magallanes",
+}
+
 
 def _norm(texto: str) -> str:
     """Elimina acentos, paréntesis y pasa a minúsculas para comparación."""
@@ -348,8 +355,9 @@ def bloquear_cliente(data: dict) -> dict:
                 region_inp.scroll_into_view_if_needed()
                 region_inp.click()
                 _region = data.get("region", "")
-                # Tipear hasta el apóstrofe para evitar problemas de encoding
-                _region_search = _region.split("'")[0].split("´")[0][:20].strip()
+                # Traducir nombre oficial al nombre corto del portal si aplica
+                _region_portal = REGION_PORTAL.get(_region, _region)
+                _region_search = _region_portal.split("'")[0].split("´")[0][:20].strip()
                 page.keyboard.type(_region_search, delay=50)
                 page.wait_for_timeout(600)
                 opts = page.locator('.vs__dropdown-option')
