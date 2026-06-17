@@ -125,9 +125,42 @@ def placeholder_select_nth(page: Page, label: str, n: int) -> None:
 
 
 def placeholder_select_texto(page: Page, label: str, opcion: str) -> None:
-    """Abre un div.placeholderInputText (vue-select) y elige opción por texto."""
+    """Abre un div.placeholderInputText (vue-select) y elige opción por texto.
+    Primero intenta filter(has_text). Si no lo encuentra, busca el label en el DOM
+    y navega al div.placeholderInputText más cercano."""
     tgt = page.locator('div.placeholderInputText').filter(has_text=label).first
-    tgt.wait_for(state="visible", timeout=30_000)
+    try:
+        tgt.wait_for(state="visible", timeout=5_000)
+    except Exception:
+        # Label está fuera del div — buscarlo en el DOM circundante
+        clicked = page.evaluate(
+            """(label) => {
+                const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+                let node;
+                while ((node = walker.nextNode())) {
+                    if (node.textContent.trim().toLowerCase() === label.toLowerCase()) {
+                        let el = node.parentElement;
+                        for (let i = 0; i < 8; i++) {
+                            if (!el) break;
+                            const ph = el.querySelector('div.placeholderInputText');
+                            if (ph) { ph.scrollIntoView({block:'center'}); ph.click(); return true; }
+                            el = el.parentElement;
+                        }
+                    }
+                }
+                return false;
+            }""",
+            label,
+        )
+        if not clicked:
+            raise ValueError(f'div.placeholderInputText con label "{label}" no encontrado')
+        page.wait_for_timeout(500)
+        opt = page.locator('li.vs__dropdown-option').filter(has_text=opcion).first
+        opt.wait_for(state="visible", timeout=20_000)
+        opt.scroll_into_view_if_needed()
+        opt.click()
+        page.wait_for_timeout(200)
+        return
     tgt.scroll_into_view_if_needed()
     tgt.click()
     page.wait_for_timeout(500)
@@ -387,14 +420,7 @@ def bloquear_cliente(data: dict) -> dict:
             placeholder_select_texto(page, "Expectativa", "Muy Alta")
 
             # ── Medio de información → CAPITAL INTELIGENTE ────────────────────
-            try:
-                placeholder_select_texto(page, "Medio de información", "CAPITAL INTELIGENTE")
-            except Exception as _e:
-                _url = page.url
-                _count = page.locator('div.placeholderInputText').count()
-                _texts = [page.locator('div.placeholderInputText').nth(i).inner_text() for i in range(min(_count, 10))]
-                _body = page.evaluate("() => document.body.innerText").replace('\n', ' ')[:400]
-                raise Exception(f"[FALLO Medio] URL={_url} | placeholders={_count} | texts={_texts} | body={_body}")
+            placeholder_select_texto(page, "Medio de información", "CAPITAL INTELIGENTE")
 
             # ── Tipo contacto → VISITA ─────────────────────────────────────────
             placeholder_select_texto(page, "Tipo contacto", "VISITA")
