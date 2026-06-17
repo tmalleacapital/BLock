@@ -61,7 +61,7 @@ def find_form_frame(page: Page, selector: str, timeout: int = 3_000) -> Frame:
 
 def bloquear_cliente(data: dict) -> dict:
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, slow_mo=350)
+        browser = p.chromium.launch(headless=True)
         context = browser.new_context()
         page = context.new_page()
 
