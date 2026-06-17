@@ -377,6 +377,11 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
 
+            import sys as _sys
+            _sys.stderr.write(f"[DEBUG] URL tras quote_btn: {page.url}\n")
+            _sys.stderr.write(f"[DEBUG] placeholderInputText count: {page.locator('div.placeholderInputText').count()}\n")
+            _sys.stderr.flush()
+
             # ── Proyecto → Vicente Valdés ──────────────────────────────────────
             placeholder_select_texto(page, "Proyecto", "Vicente Valdés")
 
