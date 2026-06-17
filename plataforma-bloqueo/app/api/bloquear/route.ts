@@ -21,7 +21,7 @@ const SCRIPTS: Record<string, string> = {
 
 function runScript(scriptName: string, data: Record<string, string>): Promise<RunResult> {
   return new Promise((resolve) => {
-    const scriptPath = path.resolve(process.cwd(), '..', scriptName);
+    const scriptPath = path.resolve(process.cwd(), 'scripts', scriptName);
     const pythonBin = process.env.PYTHON_BIN ?? 'python3';
     const proc = spawn(pythonBin, [scriptPath, JSON.stringify(data)]);
 
