@@ -348,9 +348,21 @@ def bloquear_cliente(data: dict) -> dict:
                 region_inp.scroll_into_view_if_needed()
                 region_inp.click()
                 _region = data.get("region", "")
-                page.keyboard.type(_region[:10], delay=50)
-                page.wait_for_timeout(500)
-                page.locator('.vs__dropdown-option').filter(has_text=_region).first.click()
+                _region_clean = _norm(_region).replace("'", "").replace("´", "")
+                page.keyboard.type(_region_clean[:12], delay=50)
+                page.wait_for_timeout(600)
+                opts = page.locator('.vs__dropdown-option')
+                opts.first.wait_for(state="visible", timeout=10_000)
+                total_opts = opts.count()
+                best_idx = 0
+                best_score = -1
+                for i in range(total_opts):
+                    opt_norm = _norm(opts.nth(i).text_content() or "").replace("'", "")
+                    score = sum(1 for w in _region_clean.split() if w in opt_norm)
+                    if score > best_score:
+                        best_score, best_idx = score, i
+                opts.nth(best_idx).scroll_into_view_if_needed()
+                opts.nth(best_idx).click()
                 page.wait_for_timeout(400)
 
                 # Comuna se habilita tras seleccionar región (excluir el input disabled)
