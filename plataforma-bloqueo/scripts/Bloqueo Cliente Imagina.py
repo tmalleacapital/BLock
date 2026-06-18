@@ -108,9 +108,9 @@ def bloquear_cliente(data: dict) -> dict:
                     f" | page={page_url} | frames={frame_info} | body={body}"
                 )
 
-            visita_loc = menu_frame.locator('a.verdana10_azulnormal[href*="visita_mov.asp"]')
-            visita_loc.wait_for(state="visible", timeout=30_000)
-            visita_loc.click()
+            visita_loc = menu_frame.locator('a[href*="visita_mov.asp"]')
+            visita_loc.wait_for(state="attached", timeout=30_000)
+            visita_loc.click(force=True)
             page.wait_for_load_state("networkidle")
 
             # ── 4. Click en Nuevo ──────────────────────────────────────────────
