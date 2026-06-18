@@ -423,6 +423,11 @@ export default function FichaForm({
                             *
                           </span>
                         )}
+                        {field.key === 'apellidoMaterno' && (
+                          <span className="ml-1.5 normal-case tracking-normal font-normal" style={{ color: 'var(--muted)' }}>
+                            — Si tiene un solo apellido, repetir dos veces
+                          </span>
+                        )}
                       </label>
                       <FieldInput
                         field={field}

@@ -27,6 +27,7 @@ export const ALLOWED_DOMAINS = ['capitalinteligente.cl', 'capitalinteligente.me'
 
 export const ADMIN_EMAILS = [
   'vpedrerop@capitalinteligente.cl',
+  'tmallea@capitalinteligente.cl',
   'amarisio@capitalinteligente.cl',
   'djerez@capitalinteligente.cl',
   'cgonzalez@capitalinteligente.cl',

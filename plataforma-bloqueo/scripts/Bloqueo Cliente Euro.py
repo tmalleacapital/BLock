@@ -361,7 +361,7 @@ def bloquear_cliente(data: dict) -> dict:
                 save.scroll_into_view_if_needed()
                 save.click()
                 page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(1_000)
+                page.wait_for_timeout(2_000)
 
             elif not quote_ya_visible:
                 # Cliente existe con formulario pre-rellenado — guardar para llegar al perfil
@@ -369,10 +369,11 @@ def bloquear_cliente(data: dict) -> dict:
                 save.scroll_into_view_if_needed()
                 save.click()
                 page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(1_000)
+                page.wait_for_timeout(2_000)
 
             # ── Cotizar (cliente nuevo o existente) ────────────────────────────
-            page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=30_000)
+            page.wait_for_load_state("networkidle")
+            page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=60_000)
             page.locator('button[data-cy="quote_btn"]').click()
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
