@@ -30,7 +30,7 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-LOGO_PATH = r"C:\Users\vpedrero\Downloads\Logo-Capital-Inteligente.webp"
+LOGO_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Logo-Capital-Inteligente.webp')
 
 FIRMA_HTML = """
 <br><br>

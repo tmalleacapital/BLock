@@ -31,7 +31,7 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-LOGO_PATH     = r"C:\Users\vpedrero\Downloads\Logo-Capital-Inteligente.webp"
+LOGO_PATH     = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Logo-Capital-Inteligente.webp')
 GMAIL_USER    = os.environ['GMAIL_USER']
 GMAIL_PASS    = os.environ['GMAIL_PASS']
 DESTINATARIOS = ["TODO@activa.cl"]  # TODO: reemplazar con el correo de contacto de Activa/Convet
