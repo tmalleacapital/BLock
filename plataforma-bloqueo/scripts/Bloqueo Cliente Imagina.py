@@ -80,21 +80,33 @@ def bloquear_cliente(data: dict) -> dict:
             page.locator('img[onclick*="jsMenuAPP"]').click()
             page.wait_for_timeout(3_000)
 
-            # ── 3. Click en Visita — frame conocido: MenuPrivilegioUsuario.aspx ──
+            # ── 3. Esperar frame con el link de Visita ────────────────────────
+            # Busca por contenido en vez de URL (el path exacto varía según configuración).
             menu_frame = None
             deadline = time.time() + 30
             while time.time() < deadline and not menu_frame:
                 for frame in page.frames:
-                    if "MenuPrivilegioUsuario" in frame.url:
+                    try:
+                        frame.locator('a[href*="visita_mov.asp"]').wait_for(
+                            state="attached", timeout=400
+                        )
                         menu_frame = frame
                         break
+                    except Exception:
+                        pass
                 if not menu_frame:
                     page.wait_for_timeout(300)
             if not menu_frame:
-                frame_urls = [f.url for f in page.frames]
+                frame_info = [
+                    {"url": f.url, "name": f.name, "parent": f.parent_frame.url if f.parent_frame else None}
+                    for f in page.frames
+                ]
                 page_url = page.url
-                body = page.evaluate("() => document.body?.innerText || ''").replace('\n',' ')[:400]
-                raise ValueError(f"No apareció el frame MenuPrivilegioUsuario.aspx | page={page_url} | frames={frame_urls} | body={body}")
+                body = page.evaluate("() => document.body?.innerText || ''").replace('\n', ' ')[:400]
+                raise ValueError(
+                    f"No apareció link visita_mov.asp en ningún frame"
+                    f" | page={page_url} | frames={frame_info} | body={body}"
+                )
 
             visita_loc = menu_frame.locator('a.verdana10_azulnormal[href*="visita_mov.asp"]')
             visita_loc.wait_for(state="visible", timeout=30_000)
@@ -106,7 +118,7 @@ def bloquear_cliente(data: dict) -> dict:
             deadline = time.time() + 30
             while time.time() < deadline:
                 for frame in page.frames:
-                    if "MenuPrivilegioUsuario" in frame.url:
+                    if frame is menu_frame:
                         continue
                     try:
                         loc = frame.locator("#Nuevo")
@@ -130,7 +142,7 @@ def bloquear_cliente(data: dict) -> dict:
             deadline = time.time() + 30
             while time.time() < deadline:
                 for frame in page.frames:
-                    if "MenuPrivilegioUsuario" in frame.url:
+                    if frame is menu_frame:
                         continue
                     try:
                         frame.locator("#Grabar").wait_for(state="visible", timeout=1_000)
@@ -239,7 +251,7 @@ def bloquear_cliente(data: dict) -> dict:
             deadline = time.time() + 30
             while time.time() < deadline:
                 for frame in page.frames:
-                    if "MenuPrivilegioUsuario" in frame.url:
+                    if frame is menu_frame:
                         continue
                     try:
                         frame.locator("#proyecto").wait_for(state="visible", timeout=1_000)
