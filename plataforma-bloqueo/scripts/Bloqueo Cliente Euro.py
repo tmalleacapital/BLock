@@ -396,7 +396,7 @@ def bloquear_cliente(data: dict) -> dict:
                 _url  = page.url
                 _btns = page.evaluate(
                     "() => Array.from(document.querySelectorAll('button[data-cy]'))"
-                    ".map(b => b.getAttribute('data-cy')).join(', ')"
+                    ".map(b => b.getAttribute('data-cy') + ':\"' + b.textContent.trim().replace(/\\s+/g,' ') + '\"').join(', ')"
                 )
                 _body = page.evaluate("() => document.body.innerText").replace('\n', ' ')[:600]
                 raise ValueError(
