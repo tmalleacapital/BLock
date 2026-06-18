@@ -372,16 +372,20 @@ def bloquear_cliente(data: dict) -> dict:
                 page.wait_for_timeout(2_000)
 
             # ── Avanzar por los pasos del wizard hasta llegar al perfil ────────
-            # El portal usa un wizard de 5 pasos; next_btn avanza al siguiente paso
-            # hasta que aparece quote_btn en el perfil del cliente.
+            # Pasos 1-4: next_btn avanza al siguiente paso.
+            # Paso 5 (final, Antecedentes financieros): no hay next_btn → save_btn completa el wizard.
             for _ in range(10):
                 if page.locator('button[data-cy="quote_btn"]').is_visible():
                     break
-                next_btn = page.locator('button[data-cy="next_btn"]')
-                if next_btn.is_visible():
-                    next_btn.click()
+                if page.locator('button[data-cy="next_btn"]').is_visible():
+                    page.locator('button[data-cy="next_btn"]').click()
                     page.wait_for_load_state("networkidle")
                     page.wait_for_timeout(1_500)
+                elif '/customers-creation' in page.url:
+                    # Último paso del wizard — save_btn finaliza la creación
+                    page.locator('button[data-cy="save_btn"]').first.click()
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(2_000)
                 else:
                     page.wait_for_timeout(500)
 
