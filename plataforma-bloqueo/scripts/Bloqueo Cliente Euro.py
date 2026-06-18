@@ -371,10 +371,23 @@ def bloquear_cliente(data: dict) -> dict:
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(2_000)
 
+            # ── Avanzar por los pasos del wizard hasta llegar al perfil ────────
+            # El portal usa un wizard de 5 pasos; next_btn avanza al siguiente paso
+            # hasta que aparece quote_btn en el perfil del cliente.
+            for _ in range(10):
+                if page.locator('button[data-cy="quote_btn"]').is_visible():
+                    break
+                next_btn = page.locator('button[data-cy="next_btn"]')
+                if next_btn.is_visible():
+                    next_btn.click()
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(1_500)
+                else:
+                    page.wait_for_timeout(500)
+
             # ── Cotizar (cliente nuevo o existente) ────────────────────────────
-            page.wait_for_load_state("networkidle")
             try:
-                page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=60_000)
+                page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=30_000)
             except Exception:
                 _url  = page.url
                 _btns = page.evaluate(
