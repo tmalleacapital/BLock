@@ -356,9 +356,11 @@ def bloquear_cliente(data: dict) -> dict:
                 # ── 19. Medio → REFERIDO ──────────────────────────────────────
                 vs_placeholder(page, "Seleccione medio", "REFERIDO")
 
-                # ── Guardar cliente nuevo ─────────────────────────────────────
+                # ── Guardar cliente nuevo (paso 1) ───────────────────────────
                 save = page.locator('button[data-cy="save_btn"]')
+                save.wait_for(state="visible", timeout=30_000)
                 save.scroll_into_view_if_needed()
+                page.wait_for_timeout(500)
                 save.click()
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(2_000)
@@ -366,30 +368,14 @@ def bloquear_cliente(data: dict) -> dict:
             elif not quote_ya_visible:
                 # Cliente existe con formulario pre-rellenado — guardar para llegar al perfil
                 save = page.locator('button[data-cy="save_btn"]')
+                save.wait_for(state="visible", timeout=30_000)
                 save.scroll_into_view_if_needed()
+                page.wait_for_timeout(500)
                 save.click()
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(2_000)
 
-            # ── Avanzar por los pasos del wizard hasta llegar al perfil ────────
-            # Pasos 1-4: next_btn avanza al siguiente paso.
-            # Paso 5 (final, Antecedentes financieros): no hay next_btn → save_btn completa el wizard.
-            for _ in range(10):
-                if page.locator('button[data-cy="quote_btn"]').is_visible():
-                    break
-                if page.locator('button[data-cy="next_btn"]').is_visible():
-                    page.locator('button[data-cy="next_btn"]').click()
-                    page.wait_for_load_state("networkidle")
-                    page.wait_for_timeout(1_500)
-                elif '/customers-creation' in page.url:
-                    # Último paso del wizard — save_btn finaliza la creación
-                    page.locator('button[data-cy="save_btn"]').first.click()
-                    page.wait_for_load_state("networkidle")
-                    page.wait_for_timeout(2_000)
-                else:
-                    page.wait_for_timeout(500)
-
-            # ── Cotizar (cliente nuevo o existente) ────────────────────────────
+            # ── Cotizar — quote_btn aparece en paso 1 tras guardar ─────────────
             try:
                 page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=30_000)
             except Exception:
