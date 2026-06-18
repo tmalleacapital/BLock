@@ -299,13 +299,14 @@ def bloquear_cliente(data: dict) -> dict:
             f2.select_option("#producto", producto_val)
 
             # Esperar que trae_cotizacion() cargue el formulario de cotización
-            f2.locator("#valoraplicac").wait_for(state="visible", timeout=12_000)
+            # El portal tiene IDs duplicados (#valoraplicac, #valoraplica) — usar .first (DESCUENTO ADICIONAL)
+            f2.locator("#valoraplicac").first.wait_for(state="visible", timeout=12_000)
             f2.wait_for_timeout(400)
 
             # ── 16. Descuento: habilitar checkbox y poner 10 ──────────────────
-            f2.locator("#valoraplicac").click()
+            f2.locator("#valoraplicac").first.click()
             f2.wait_for_timeout(250)
-            f2.locator("#valoraplica").fill("10")
+            f2.locator("#valoraplica").first.fill("10")
 
             # ── 17. Grabar (parte 2: cotización) ──────────────────────────────
             f2.click("#Grabar")
