@@ -1,0 +1,9 @@
+cd "$(git rev-parse --show-toplevel)/plataforma-bloqueo" || exit 1
+
+echo "→ ESLint..."
+npm run lint || exit 1
+
+echo "→ TypeScript..."
+npx tsc --noEmit || exit 1
+
+echo "✓ Pre-commit passed"

@@ -19,6 +19,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     const stored = localStorage.getItem('theme') as Theme | null;
     const initial = stored === 'light' || stored === 'dark' ? stored : 'dark';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(initial);
     document.documentElement.setAttribute('data-theme', initial);
   }, []);

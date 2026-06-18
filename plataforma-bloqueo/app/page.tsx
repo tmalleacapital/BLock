@@ -25,14 +25,6 @@ function isToday(iso: string): boolean {
   );
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isToday(iso)) {
-    return `Hoy ${d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}`;
-  }
-  return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' });
-}
-
 function getGreeting(): string {
   const h = new Date().getHours();
   if (h < 12) return 'Buenos días.';
@@ -110,7 +102,7 @@ const cardShadow = '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.
 
 export default function HomePage() {
   const [history, setHistory] = useState<BlockingRecord[]>([]);
-  const [greeting, setGreeting] = useState('');
+  const [greeting] = useState(() => getGreeting());
   const [queueData, setQueueData] = useState<QueueData>({ portals: {}, totalWaiting: 0 });
   const pollQueue = useCallback(async () => {
     try {
@@ -127,7 +119,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    setGreeting(getGreeting());
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refreshHistory();
     const onVisible = () => { if (document.visibilityState === 'visible') void refreshHistory(); };
     const onUpdated = () => void refreshHistory();
@@ -140,6 +132,7 @@ export default function HomePage() {
   }, [refreshHistory]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     pollQueue();
     const interval = setInterval(pollQueue, 3000);
     return () => clearInterval(interval);
