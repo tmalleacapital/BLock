@@ -373,7 +373,18 @@ def bloquear_cliente(data: dict) -> dict:
 
             # ── Cotizar (cliente nuevo o existente) ────────────────────────────
             page.wait_for_load_state("networkidle")
-            page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=60_000)
+            try:
+                page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=60_000)
+            except Exception:
+                _url  = page.url
+                _btns = page.evaluate(
+                    "() => Array.from(document.querySelectorAll('button[data-cy]'))"
+                    ".map(b => b.getAttribute('data-cy')).join(', ')"
+                )
+                _body = page.evaluate("() => document.body.innerText").replace('\n', ' ')[:600]
+                raise ValueError(
+                    f"[quote_btn timeout] URL={_url} | buttons=[{_btns}] | body={_body}"
+                )
             page.locator('button[data-cy="quote_btn"]').click()
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
