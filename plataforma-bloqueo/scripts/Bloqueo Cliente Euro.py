@@ -369,6 +369,17 @@ def bloquear_cliente(data: dict) -> dict:
 
                 # ── Guardar cliente nuevo (paso 1) ───────────────────────────
                 page.wait_for_timeout(1_000)  # dejar que Vue termine de procesar los dropdowns
+
+                # Debug pre-save: leer valores reales de los campos clave
+                _pre = page.evaluate("""() => ({
+                    rut:      document.querySelector('[data-cy="create-customer-rut"]')?.value,
+                    nombres:  document.querySelector('[data-cy="create-customer-names"]')?.value,
+                    apellido: document.querySelector('[data-cy="create-customer-lastname"]')?.value,
+                    tipoRS:   document.querySelector('.vs__selected')?.textContent?.trim(),
+                    vsAll:    Array.from(document.querySelectorAll('.vs__selected')).map(e => e.textContent.trim())
+                })""")
+                raise ValueError(f"[pre-save] {_pre}")
+
                 save = page.locator('button[data-cy="save_btn"]')
                 save.wait_for(state="visible", timeout=30_000)
                 save.scroll_into_view_if_needed()
