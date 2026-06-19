@@ -24,7 +24,8 @@ interface ApiJobState {
 
 const GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Identidad', keys: ['rut', 'apellidoPaterno', 'apellidoMaterno', 'nombres', 'sexo', 'genero'] },
-  { label: 'Perfil',    keys: ['fechaNacimiento', 'estadoCivil', 'rutConyuge', 'nombreConyuge', 'apellidoConyuge', 'nacionalidad', 'profesion'] },
+  { label: 'Perfil',    keys: ['fechaNacimiento', 'estadoCivil', 'nacionalidad', 'profesion'] },
+  { label: 'Conviviente civil', keys: ['rutConyuge', 'nombreConyuge', 'apellidoConyuge'] },
   { label: 'Dirección', keys: ['calle', 'numero', 'direccion', 'region', 'comuna', 'ciudad'] },
   { label: 'Contacto',  keys: ['telefonoCelular', 'correoElectronico'] },
   { label: 'Proyecto',  keys: ['proyecto', 'unidad', 'tipologia'] },
@@ -388,7 +389,7 @@ export default function FichaForm({
       {/* ── Formulario ── */}
       <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-4">
         {GROUPS.map((group) => {
-          const fields = group.keys.map((k) => fieldMap[k]).filter(Boolean);
+          const fields = group.keys.map((k) => fieldMap[k]).filter(Boolean).filter(isFieldVisible);
           if (fields.length === 0) return null;
           return (
             <section
@@ -411,7 +412,7 @@ export default function FichaForm({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {fields.filter(isFieldVisible).map((field) => {
+                {fields.map((field) => {
                   const isWide = field.key === 'region' || field.key === 'nombres' || field.key === 'profesion';
                   return (
                     <div key={field.key} className={isWide ? 'sm:col-span-2' : ''}>
