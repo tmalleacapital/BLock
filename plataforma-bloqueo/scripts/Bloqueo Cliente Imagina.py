@@ -73,7 +73,7 @@ def bloquear_cliente(data: dict) -> dict:
             page.fill("#correo_dominio", CREDS["dominio"])
             page.fill("#clave", CREDS["clave"])
             page.click('a[onclick*="jsAceptar"]')
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("load")
 
             # ── 2. Click en ícono de menú (Panel Control) ─────────────────────
             page.locator('img[onclick*="jsMenuAPP"]').wait_for(state="visible", timeout=30_000)
@@ -111,7 +111,7 @@ def bloquear_cliente(data: dict) -> dict:
             visita_loc = menu_frame.locator('a[href*="visita_mov.asp"]')
             visita_loc.wait_for(state="attached", timeout=30_000)
             visita_loc.click(force=True)
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("load")
 
             # ── 4. Click en Nuevo ──────────────────────────────────────────────
             nuevo_clicked = False
@@ -243,7 +243,7 @@ def bloquear_cliente(data: dict) -> dict:
 
             # ── 10. Grabar (parte 1: datos del cliente) ────────────────────────
             f.click("#Grabar")
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("load")
             page.wait_for_timeout(800)
 
             # ── 11. Buscar frame con formulario de producto (#proyecto) ────────
@@ -310,7 +310,7 @@ def bloquear_cliente(data: dict) -> dict:
 
             # ── 17. Grabar (parte 2: cotización) ──────────────────────────────
             f2.click("#Grabar")
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("load")
             page.wait_for_timeout(2_000)
 
             return {
