@@ -357,13 +357,26 @@ def bloquear_cliente(data: dict) -> dict:
                 vs_placeholder(page, "Seleccione medio", "REFERIDO")
 
                 # ── Guardar cliente nuevo (paso 1) ───────────────────────────
+                page.wait_for_timeout(1_000)  # dejar que Vue termine de procesar los dropdowns
                 save = page.locator('button[data-cy="save_btn"]')
                 save.wait_for(state="visible", timeout=30_000)
                 save.scroll_into_view_if_needed()
-                page.wait_for_timeout(500)
+                page.wait_for_timeout(800)
                 save.click()
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(2_000)
+
+                # Debug: capturar errores de validación inmediatamente tras guardar
+                if '/customers-creation' in page.url and not page.locator('button[data-cy="quote_btn"]').is_visible():
+                    _val = page.evaluate("""() => {
+                        const sel = '.invalid-feedback, .is-invalid ~ *, [class*="error-msg"], .text-danger';
+                        return Array.from(document.querySelectorAll(sel))
+                            .map(e => e.textContent.trim()).filter(t => t).slice(0, 8).join(' | ');
+                    }""")
+                    _disabled = page.evaluate(
+                        "() => document.querySelector('button[data-cy=\"save_btn\"]')?.disabled ?? 'n/a'"
+                    )
+                    raise ValueError(f"[save no navigó] save_btn.disabled={_disabled} | validation={_val or 'ninguno'}")
 
             elif not quote_ya_visible:
                 # Cliente existe con formulario pre-rellenado — guardar para llegar al perfil
