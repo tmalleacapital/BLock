@@ -330,6 +330,13 @@ def bloquear_cliente(data: dict) -> dict:
 
                 # ── 11. Estado civil ──────────────────────────────────────────
                 vs_placeholder(page, "Seleccione Estado civil", data.get("estadoCivil", ""))
+                page.wait_for_timeout(400)
+
+                # ── 11b. Cónyuge (solo si Conviviente Civil) ──────────────────
+                if data.get("estadoCivil", "") == "Conviviente Civil":
+                    rellenar('[data-cy="create-customer-spouse-rut"]',      data.get("rutConyuge", ""))
+                    rellenar('[data-cy="create-customer-spouse-name"]',     data.get("nombreConyuge", ""))
+                    rellenar('[data-cy="create-customer-spouse-lastname"]', data.get("apellidoConyuge", ""))
 
                 # ── 12. Nacionalidad ──────────────────────────────────────────
                 vs_placeholder_fuzzy(page, "Seleccione Nacionalidad", data.get("nacionalidad", ""))

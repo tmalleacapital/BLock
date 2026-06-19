@@ -24,7 +24,7 @@ interface ApiJobState {
 
 const GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Identidad', keys: ['rut', 'apellidoPaterno', 'apellidoMaterno', 'nombres', 'sexo', 'genero'] },
-  { label: 'Perfil',    keys: ['fechaNacimiento', 'estadoCivil', 'nacionalidad', 'profesion'] },
+  { label: 'Perfil',    keys: ['fechaNacimiento', 'estadoCivil', 'rutConyuge', 'nombreConyuge', 'apellidoConyuge', 'nacionalidad', 'profesion'] },
   { label: 'Dirección', keys: ['calle', 'numero', 'direccion', 'region', 'comuna', 'ciudad'] },
   { label: 'Contacto',  keys: ['telefonoCelular', 'correoElectronico'] },
   { label: 'Proyecto',  keys: ['proyecto', 'unidad', 'tipologia'] },
@@ -294,8 +294,11 @@ export default function FichaForm({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, jobStatus]);
 
+  const isFieldVisible = (f: FieldDef) =>
+    !f.showWhen || values[f.showWhen.field] === f.showWhen.value;
+
   const allFilled = schema.fields
-    .filter((f) => f.required)
+    .filter((f) => f.required && isFieldVisible(f))
     .every((f) => (values[f.key] ?? '').trim() !== '');
 
   const isProcessing = jobStatus === 'queuing' || jobStatus === 'en_cola' || jobStatus === 'procesando';
@@ -408,7 +411,7 @@ export default function FichaForm({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {fields.map((field) => {
+                {fields.filter(isFieldVisible).map((field) => {
                   const isWide = field.key === 'region' || field.key === 'nombres' || field.key === 'profesion';
                   return (
                     <div key={field.key} className={isWide ? 'sm:col-span-2' : ''}>
@@ -753,7 +756,7 @@ export default function FichaForm({
           </p>
           <div className="space-y-2.5">
             {GROUPS.map((group) => {
-              const fields = group.keys.map((k) => fieldMap[k]).filter(Boolean);
+              const fields = group.keys.map((k) => fieldMap[k]).filter(Boolean).filter(isFieldVisible);
               const filled = fields.filter((f) => (values[f.key] ?? '').trim() !== '').length;
               const total = fields.length;
               const done = filled === total && total > 0;
@@ -787,8 +790,8 @@ export default function FichaForm({
           {/* Barra de progreso */}
           <div className="mt-5">
             {(() => {
-              const total = schema.fields.filter((f) => f.required).length;
-              const filled = schema.fields.filter((f) => f.required && (values[f.key] ?? '').trim() !== '').length;
+              const total = schema.fields.filter((f) => f.required && isFieldVisible(f)).length;
+              const filled = schema.fields.filter((f) => f.required && isFieldVisible(f) && (values[f.key] ?? '').trim() !== '').length;
               const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
               return (
                 <>

@@ -17,6 +17,7 @@ export interface FieldDef {
   required: boolean;
   options?: SelectOption[];
   helpText?: string;
+  showWhen?: { field: string; value: string };
 }
 
 export interface FieldSchema {
