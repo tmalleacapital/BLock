@@ -248,21 +248,13 @@ def bloquear_cliente(data: dict) -> dict:
 
             page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=30_000)
 
-            # Debug: capturar placeholders de vue-select y opciones del dropdown Tipo razón social
-            _vs_placeholders = page.evaluate("""() =>
-                Array.from(document.querySelectorAll('input.vs__search'))
-                    .map(e => e.getAttribute('placeholder') || '').filter(Boolean)
-            """)
-            # Abrir el primer vs__search que tenga razón social en su placeholder
-            _tipo_inp = page.locator('input.vs__search').first
-            _tipo_inp.scroll_into_view_if_needed()
-            _tipo_inp.click()
+            # Seleccionar "Persona Natural" en Tipo razón social (requerido desde actualización Mobysuite)
+            tipo_inp = page.locator('input.vs__search[placeholder="Seleccione"]').first
+            tipo_inp.scroll_into_view_if_needed()
+            tipo_inp.click()
+            page.wait_for_timeout(400)
+            page.locator('li.vs__dropdown-option').filter(has_text="Persona Natural").first.click()
             page.wait_for_timeout(600)
-            _tipo_opts = page.evaluate("""() =>
-                Array.from(document.querySelectorAll('li.vs__dropdown-option'))
-                    .map(o => o.textContent.trim()).join(' | ')
-            """)
-            raise ValueError(f"[debug vs-selects] placeholders={_vs_placeholders} | opts_primero={_tipo_opts}")
 
             # Ingresar RUT — la página recarga y navega si el cliente ya existe
             url_antes = page.url
