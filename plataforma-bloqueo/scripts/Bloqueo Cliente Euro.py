@@ -238,23 +238,12 @@ def bloquear_cliente(data: dict) -> dict:
 
             # ── 6. Datos personales ────────────────────────────────────────────
             def rellenar(selector: str, valor: str) -> None:
-                """fill() + press_sequentially para disparar eventos Vue."""
                 loc = page.locator(selector)
                 loc.scroll_into_view_if_needed()
                 loc.click()
-                loc.fill("")
-                loc.press_sequentially(valor, delay=60)
-                page.wait_for_timeout(150)
+                loc.fill(valor)
 
             page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=30_000)
-
-            # Seleccionar "Persona Natural" en Tipo razón social (requerido desde actualización Mobysuite)
-            tipo_inp = page.locator('input.vs__search[placeholder="Seleccione"]').first
-            tipo_inp.scroll_into_view_if_needed()
-            tipo_inp.click()
-            page.wait_for_timeout(400)
-            page.locator('li.vs__dropdown-option').filter(has_text="Persona Natural").first.click()
-            page.wait_for_timeout(600)
 
             # Ingresar RUT — la página recarga y navega si el cliente ya existe
             url_antes = page.url
@@ -368,18 +357,7 @@ def bloquear_cliente(data: dict) -> dict:
                 vs_placeholder(page, "Seleccione medio", "REFERIDO")
 
                 # ── Guardar cliente nuevo (paso 1) ───────────────────────────
-                page.wait_for_timeout(1_000)  # dejar que Vue termine de procesar los dropdowns
-
-                # Debug pre-save: leer valores reales de los campos clave
-                _pre = page.evaluate("""() => ({
-                    rut:      document.querySelector('[data-cy="create-customer-rut"]')?.value,
-                    nombres:  document.querySelector('[data-cy="create-customer-names"]')?.value,
-                    apellido: document.querySelector('[data-cy="create-customer-lastname"]')?.value,
-                    tipoRS:   document.querySelector('.vs__selected')?.textContent?.trim(),
-                    vsAll:    Array.from(document.querySelectorAll('.vs__selected')).map(e => e.textContent.trim())
-                })""")
-                raise ValueError(f"[pre-save] {_pre}")
-
+                page.wait_for_timeout(1_000)
                 save = page.locator('button[data-cy="save_btn"]')
                 save.wait_for(state="visible", timeout=30_000)
                 save.scroll_into_view_if_needed()
@@ -387,18 +365,6 @@ def bloquear_cliente(data: dict) -> dict:
                 save.click()
                 page.wait_for_load_state("networkidle")
                 page.wait_for_timeout(2_000)
-
-                # Debug: capturar errores de validación inmediatamente tras guardar
-                if '/customers-creation' in page.url and not page.locator('button[data-cy="quote_btn"]').is_visible():
-                    _val = page.evaluate("""() => {
-                        const sel = '.invalid-feedback, .is-invalid ~ *, [class*="error-msg"], .text-danger';
-                        return Array.from(document.querySelectorAll(sel))
-                            .map(e => e.textContent.trim()).filter(t => t).slice(0, 8).join(' | ');
-                    }""")
-                    _disabled = page.evaluate(
-                        "() => document.querySelector('button[data-cy=\"save_btn\"]')?.disabled ?? 'n/a'"
-                    )
-                    raise ValueError(f"[save no navigó] save_btn.disabled={_disabled} | validation={_val or 'ninguno'}")
 
             elif not quote_ya_visible:
                 # Cliente existe con formulario pre-rellenado — guardar para llegar al perfil
@@ -411,18 +377,7 @@ def bloquear_cliente(data: dict) -> dict:
                 page.wait_for_timeout(2_000)
 
             # ── Cotizar — quote_btn aparece en paso 1 tras guardar ─────────────
-            try:
-                page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=30_000)
-            except Exception:
-                _url  = page.url
-                _btns = page.evaluate(
-                    "() => Array.from(document.querySelectorAll('button[data-cy]'))"
-                    ".map(b => b.getAttribute('data-cy') + ':\"' + b.textContent.trim().replace(/\\s+/g,' ') + '\"').join(', ')"
-                )
-                _body = page.evaluate("() => document.body.innerText").replace('\n', ' ')[:600]
-                raise ValueError(
-                    f"[quote_btn timeout] URL={_url} | buttons=[{_btns}] | body={_body}"
-                )
+            page.locator('button[data-cy="quote_btn"]').wait_for(state="visible", timeout=30_000)
             page.locator('button[data-cy="quote_btn"]').click()
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
