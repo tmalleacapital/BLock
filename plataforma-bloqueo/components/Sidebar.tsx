@@ -147,16 +147,14 @@ export default function Sidebar({ isAdmin }: { isAdmin?: boolean }) {
               Activos
             </p>
             <ul className="space-y-0.5">
-              {INMOBILIARIAS.filter((inm) => inm.active).map((inm) => {
+              {INMOBILIARIAS.filter((inm) => inm.active && !inm.paused).map((inm) => {
                 const isActive = inm.key === activeKey;
                 return (
                   <li key={inm.key}>
                     <Link
                       href={`/${inm.key}`}
                       aria-current={isActive ? 'page' : undefined}
-                      className={[
-                        'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
-                      ].join(' ')}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
                       onMouseEnter={(e) => {
                         if (!isActive) {
                           (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'color-mix(in srgb, var(--accent) 9%, transparent)';
@@ -183,6 +181,55 @@ export default function Sidebar({ isAdmin }: { isAdmin?: boolean }) {
               })}
             </ul>
           </div>
+
+          {/* En pausa — solo admins */}
+          {isAdmin && (
+            <>
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+              <div>
+                <p
+                  className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest"
+                  style={{ color: 'var(--muted)' }}
+                >
+                  En pausa
+                </p>
+                <ul className="space-y-0.5">
+                  {INMOBILIARIAS.filter((inm) => inm.paused).map((inm) => {
+                    const isActive = inm.key === activeKey;
+                    return (
+                      <li key={inm.key}>
+                        <Link
+                          href={`/${inm.key}`}
+                          aria-current={isActive ? 'page' : undefined}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                          onMouseEnter={(e) => {
+                            if (!isActive) {
+                              (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'color-mix(in srgb, var(--accent) 9%, transparent)';
+                              (e.currentTarget as HTMLAnchorElement).style.color = 'var(--accent)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isActive) {
+                              (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '';
+                              (e.currentTarget as HTMLAnchorElement).style.color = 'var(--muted)';
+                            }
+                          }}
+                          style={
+                            isActive
+                              ? { backgroundColor: 'var(--accent)', color: '#ffffff' }
+                              : { color: 'var(--muted)' }
+                          }
+                        >
+                          <BuildingIcon />
+                          <span className="flex-1">{inm.name}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </>
+          )}
 
         </div>
       </nav>
