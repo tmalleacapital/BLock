@@ -316,8 +316,8 @@ def bloquear_cliente(data: dict) -> dict:
                 # ── 10. Género ────────────────────────────────────────────────
                 vs_placeholder(page, "Seleccione Sexo", data.get("genero", ""))
 
-                # ── 11. Estado civil ──────────────────────────────────────────
-                vs_placeholder(page, "Seleccione Estado civil", data.get("estadoCivil", ""))
+                # ── 11. Estado civil → siempre Soltero ───────────────────────
+                vs_placeholder(page, "Seleccione Estado civil", "Soltero")
 
                 # ── 12. Nacionalidad ──────────────────────────────────────────
                 vs_placeholder_fuzzy(page, "Seleccione Nacionalidad", data.get("nacionalidad", ""))
@@ -469,7 +469,6 @@ DATOS_PRUEBA = {
     "correoElectronico": "juan@example.com",
     "profesion":         "INGENIERO(A) CIVIL INDUSTRIAL",
     "genero":            "Masculino",
-    "estadoCivil":       "Soltero",
     "nacionalidad":      "Chilena",
     "direccion":         "Av. Providencia 1234",
     "region":            "Región Metropolitana de Santiago",
