@@ -248,26 +248,21 @@ def bloquear_cliente(data: dict) -> dict:
 
             page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=30_000)
 
-            # Debug: capturar controles de tipo de cliente DESPUÉS de que carga el formulario
-            _tipo_info = page.evaluate("""() => {
-                const all = Array.from(document.querySelectorAll('input[type="radio"], button, label'));
-                return all
-                    .filter(e => {
-                        const t = (e.textContent || '').trim();
-                        return t && t.length < 60;
-                    })
-                    .slice(0, 25)
-                    .map(e => ({
-                        tag: e.tagName,
-                        type: e.getAttribute('type') || '',
-                        cy: e.getAttribute('data-cy') || '',
-                        cls: e.className.toString().slice(0, 50),
-                        txt: (e.textContent || '').trim().slice(0, 50),
-                        checked: e.checked ?? null
-                    }));
-            }""")
-            _body_top = page.evaluate("() => document.body.innerText").replace('\\n', ' ')[:400]
-            raise ValueError(f"[debug tipo-cliente v2] body={_body_top} | controles={_tipo_info}")
+            # Debug: capturar placeholders de vue-select y opciones del dropdown Tipo razón social
+            _vs_placeholders = page.evaluate("""() =>
+                Array.from(document.querySelectorAll('input.vs__search'))
+                    .map(e => e.getAttribute('placeholder') || '').filter(Boolean)
+            """)
+            # Abrir el primer vs__search que tenga razón social en su placeholder
+            _tipo_inp = page.locator('input.vs__search').first
+            _tipo_inp.scroll_into_view_if_needed()
+            _tipo_inp.click()
+            page.wait_for_timeout(600)
+            _tipo_opts = page.evaluate("""() =>
+                Array.from(document.querySelectorAll('li.vs__dropdown-option'))
+                    .map(o => o.textContent.trim()).join(' | ')
+            """)
+            raise ValueError(f"[debug vs-selects] placeholders={_vs_placeholders} | opts_primero={_tipo_opts}")
 
             # Ingresar RUT — la página recarga y navega si el cliente ya existe
             url_antes = page.url
