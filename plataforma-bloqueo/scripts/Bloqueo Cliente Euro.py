@@ -238,10 +238,13 @@ def bloquear_cliente(data: dict) -> dict:
 
             # ── 6. Datos personales ────────────────────────────────────────────
             def rellenar(selector: str, valor: str) -> None:
+                """fill() + press_sequentially para disparar eventos Vue."""
                 loc = page.locator(selector)
                 loc.scroll_into_view_if_needed()
                 loc.click()
-                loc.fill(valor)
+                loc.fill("")
+                loc.press_sequentially(valor, delay=60)
+                page.wait_for_timeout(150)
 
             page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=30_000)
 
@@ -250,7 +253,7 @@ def bloquear_cliente(data: dict) -> dict:
             rellenar('[data-cy="create-customer-rut"]', data.get("rut", ""))
             page.keyboard.press("Tab")
             page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(1_500)
+            page.wait_for_timeout(2_500)
 
             url_actual = page.url
 
