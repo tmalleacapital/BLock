@@ -246,22 +246,28 @@ def bloquear_cliente(data: dict) -> dict:
                 loc.press_sequentially(valor, delay=60)
                 page.wait_for_timeout(150)
 
-            # Debug: capturar controles de tipo de cliente (radio/tab/btn)
-            _tipo_info = page.evaluate("""() => {
-                const sel = 'input[type="radio"], [data-cy*="type"], [data-cy*="person"], [data-cy*="natural"], [data-cy*="juridica"], [data-cy*="empresa"], label, .nav-item a, .tab-pane';
-                const els = Array.from(document.querySelectorAll(sel));
-                return els.slice(0, 20).map(e => ({
-                    tag: e.tagName,
-                    type: e.getAttribute('type') || '',
-                    cy: e.getAttribute('data-cy') || '',
-                    cls: e.className.toString().slice(0, 60),
-                    txt: (e.textContent || '').trim().slice(0, 50),
-                    checked: e.checked ?? null
-                }));
-            }""")
-            raise ValueError(f"[debug tipo-cliente] {_tipo_info}")
-
             page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=30_000)
+
+            # Debug: capturar controles de tipo de cliente DESPUÉS de que carga el formulario
+            _tipo_info = page.evaluate("""() => {
+                const all = Array.from(document.querySelectorAll('input[type="radio"], button, label'));
+                return all
+                    .filter(e => {
+                        const t = (e.textContent || '').trim();
+                        return t && t.length < 60;
+                    })
+                    .slice(0, 25)
+                    .map(e => ({
+                        tag: e.tagName,
+                        type: e.getAttribute('type') || '',
+                        cy: e.getAttribute('data-cy') || '',
+                        cls: e.className.toString().slice(0, 50),
+                        txt: (e.textContent || '').trim().slice(0, 50),
+                        checked: e.checked ?? null
+                    }));
+            }""")
+            _body_top = page.evaluate("() => document.body.innerText").replace('\\n', ' ')[:400]
+            raise ValueError(f"[debug tipo-cliente v2] body={_body_top} | controles={_tipo_info}")
 
             # Ingresar RUT — la página recarga y navega si el cliente ya existe
             url_antes = page.url
