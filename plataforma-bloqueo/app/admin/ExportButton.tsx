@@ -14,11 +14,13 @@ export default function ExportButton({ records }: { records: BlockingRecord[] })
       r.asesorEmail ?? '',
     ]);
 
+    // Separador ';' (Excel es-CL) + línea 'sep=;' para que Excel lo detecte
+    // explícitamente sin importar la configuración regional del equipo.
     const csv = [header, ...rows]
-      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+      .join('\r\n');
 
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['﻿sep=;\r\n' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
