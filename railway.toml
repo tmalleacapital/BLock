@@ -1,5 +1,5 @@
 [build]
-buildCommand = "npm --prefix plataforma-bloqueo ci && npm --prefix plataforma-bloqueo run build"
+buildCommand = "npm ci && npm run build"
 
 [deploy]
-startCommand = "npm --prefix plataforma-bloqueo run start"
+startCommand = "npm run start"
