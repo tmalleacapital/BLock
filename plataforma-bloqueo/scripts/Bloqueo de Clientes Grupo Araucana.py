@@ -4,6 +4,7 @@ Automatización de bloqueo de clientes en Cliperty para Grupo Araucana – Aires
 
 Uso standalone:  python "Bloqueo de Clientes Grupo Araucana.py"
 Uso con datos:   python "Bloqueo de Clientes Grupo Araucana.py" '{"rut":"...", ...}'
+Ver navegador:   HEADLESS=0 python "Bloqueo de Clientes Grupo Araucana.py"
 """
 
 import sys
@@ -27,11 +28,8 @@ def _load_dotenv() -> None:
 _load_dotenv()
 
 URL_LOGIN = "https://app.cliperty.com/login"
-CREDS = {
-    "usuario": os.environ['ARAUCANA_USER'],
-    "clave":   os.environ['ARAUCANA_PASS'],
-}
 PROYECTO = "Aires de Marañon"
+HEADLESS = os.environ.get('HEADLESS', '1') != '0'
 
 
 def _norm(texto: str) -> str:
@@ -51,6 +49,8 @@ def _fecha_iso(fecha_ddmmyyyy: str) -> str:
 
 def angular_select(page: Page, selector: str, label: str) -> None:
     """Selecciona por texto exacto en un <select> Angular y dispara change."""
+    if not label:
+        raise ValueError(f'Valor vacío para el select {selector}')
     loc = page.locator(selector)
     loc.wait_for(state="visible", timeout=30_000)
     loc.scroll_into_view_if_needed()
@@ -61,6 +61,8 @@ def angular_select(page: Page, selector: str, label: str) -> None:
 
 def angular_select_fuzzy(page: Page, selector: str, label: str) -> None:
     """Selecciona la opción cuyo texto normalizado más coincide con label."""
+    if not label:
+        raise ValueError(f'Valor vacío para el select {selector}')
     loc = page.locator(selector)
     loc.wait_for(state="visible", timeout=30_000)
     loc.scroll_into_view_if_needed()
@@ -69,7 +71,7 @@ def angular_select_fuzzy(page: Page, selector: str, label: str) -> None:
     options = loc.locator("option").all()
 
     best_text: str | None = None
-    best_score = -1
+    best_score = 0  # exige al menos 1 coincidencia real; evita elegir opción arbitraria
 
     for opt in options:
         raw = (opt.text_content() or "").strip()
@@ -188,9 +190,10 @@ def select_commune(page: Page, comuna: str) -> None:
         "select-country", "select-region", "select-province",
         "select-gender", "select-profession", "select-nationalities", "select-mediaOrigin",
     )
+    known_js = json.dumps(list(known_ids))
     page.wait_for_function(
         f"""() => {{
-            const known = {list(known_ids)};
+            const known = {known_js};
             const sel = Array.from(document.querySelectorAll('select.select'))
                 .find(s => !known.includes(s.id) && !s.disabled && s.options.length > 1);
             return !!sel;
@@ -199,7 +202,7 @@ def select_commune(page: Page, comuna: str) -> None:
     )
     commune_id = page.evaluate(
         f"""() => {{
-            const known = {list(known_ids)};
+            const known = {known_js};
             const sel = Array.from(document.querySelectorAll('select.select'))
                 .find(s => !known.includes(s.id) && !s.disabled && s.options.length > 1);
             return sel ? ('#' + (sel.id || '')) : null;
@@ -207,53 +210,63 @@ def select_commune(page: Page, comuna: str) -> None:
     )
     if commune_id and commune_id != '#':
         angular_select_fuzzy(page, commune_id, comuna)
-    else:
-        # Fallback posicional: el 4.° select.select (índice 3)
-        sel = page.locator("select.select").nth(3)
-        target = _norm(comuna)
-        opts = sel.locator("option").all()
-        best_text: str | None = None
-        best_score = -1
-        for opt in opts:
-            raw = (opt.text_content() or "").strip()
-            if _norm(raw) in ("seleccione una opcion", ""):
-                continue
-            if _norm(raw) == target:
+        return
+
+    # Fallback posicional: el 4.º select.select (índice 3)
+    sel = page.locator("select.select").nth(3)
+    sel.wait_for(state="visible", timeout=10_000)
+    target = _norm(comuna)
+    best_text: str | None = None
+    best_score = -1
+    for opt in sel.locator("option").all():
+        raw = (opt.text_content() or "").strip()
+        if _norm(raw) in ("seleccione una opcion", ""):
+            continue
+        if _norm(raw) == target:
+            best_text = raw
+            break
+        if target and (target in _norm(raw) or _norm(raw) in target):
+            score = len(_norm(raw))
+            if score > best_score:
+                best_score = score
                 best_text = raw
-                break
-            if target in _norm(raw) or _norm(raw) in target:
-                score = len(_norm(raw))
-                if score > best_score:
-                    best_score = score
-                    best_text = raw
-        if best_text:
-            page.select_option("select.select:nth-of-type(4)", label=best_text)
-            sel.evaluate("el => el.dispatchEvent(new Event('change'))")
-            page.wait_for_timeout(600)
+    if best_text:
+        sel.select_option(label=best_text)
+        sel.evaluate("el => el.dispatchEvent(new Event('change'))")
+        page.wait_for_timeout(600)
+    else:
+        raise ValueError(f'Comuna "{comuna}" no encontrada en el portal')
 
 
 def bloquear_cliente(data: dict) -> dict:
+    usuario = os.environ.get('ARAUCANA_USER')
+    clave = os.environ.get('ARAUCANA_PASS')
+    if not usuario or not clave:
+        return {
+            "status": "error",
+            "message": "Faltan credenciales: define ARAUCANA_USER y ARAUCANA_PASS en las variables de entorno.",
+        }
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, slow_mo=300)
+        browser = p.chromium.launch(headless=HEADLESS, slow_mo=300)
         context = browser.new_context(viewport={"width": 1920, "height": 1080}, locale='es-CL')
         page = context.new_page()
 
         try:
             # ── 1. Login ───────────────────────────────────────────────────────
-            page.goto(URL_LOGIN, wait_until="networkidle")
-            page.fill("#input-usuario", CREDS["usuario"])
-            page.fill("#input-password", CREDS["clave"])
+            page.goto(URL_LOGIN, wait_until="domcontentloaded")
+            page.wait_for_selector("#input-usuario", state="visible", timeout=30_000)
+            page.fill("#input-usuario", usuario)
+            page.fill("#input-password", clave)
             page.locator(".btn_login").click()
-            page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(2_000)
+            page.wait_for_timeout(3_000)
 
             # ── 2. Seleccionar proyecto ────────────────────────────────────────
             proyecto_loc = page.locator("div.col-12 h1").filter(has_text=PROYECTO).first
             proyecto_loc.wait_for(state="visible", timeout=30_000)
             proyecto_loc.scroll_into_view_if_needed()
             proyecto_loc.click()
-            page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(2_000)
+            page.wait_for_timeout(2_500)
 
             # ── 3. Gestión → Cotizador ─────────────────────────────────────────
             gestion = page.locator("div.item_cnt").filter(has_text="Gestión").first
@@ -264,7 +277,6 @@ def bloquear_cliente(data: dict) -> dict:
             cotizador = page.locator("div.item_cnt").filter(has_text="Cotizador").first
             cotizador.wait_for(state="visible", timeout=15_000)
             cotizador.click()
-            page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
 
             # ── 4. Vista lista ─────────────────────────────────────────────────
@@ -282,7 +294,6 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_timeout(500)
 
             page.locator("div").filter(has_text="Disponible").first.click()
-            page.wait_for_load_state("networkidle")
             page.wait_for_timeout(1_500)
 
             # ── 6. Carrito → primera unidad disponible ─────────────────────────
@@ -297,7 +308,6 @@ def bloquear_cliente(data: dict) -> dict:
                 state="visible", timeout=15_000
             )
             page.locator("button.btn_save").filter(has_text="Ir a Cotización").click()
-            page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
 
             # ── 8. Agregar Cliente ─────────────────────────────────────────────
@@ -376,7 +386,6 @@ def bloquear_cliente(data: dict) -> dict:
             save_btn.scroll_into_view_if_needed()
             page.wait_for_timeout(500)
             save_btn.click()
-            page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
 
             return {

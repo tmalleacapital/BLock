@@ -7,6 +7,7 @@ import { getSession, COOKIE_NAME } from '@/lib/auth';
 import type { RunResult } from '@/lib/inmobiliarias/types';
 
 const SCRIPTS: Record<string, string> = {
+  araucana:   'Bloqueo de Clientes Grupo Araucana.py',
   imagina:    'Bloqueo Cliente Imagina.py',
   euro:       'Bloqueo Cliente Euro.py',
   simonetti:  'Bloqueo Cliente Simonetti.py',
