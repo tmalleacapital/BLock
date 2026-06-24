@@ -20,10 +20,17 @@ const g = global as typeof global & Partial<HistoryGlobal>;
 g.__history_records ??= [];
 g.__history_loaded  ??= false;
 
-// Directorio de datos persistente. En Railway debe apuntar al volumen
-// (define DATA_DIR=/app/data en Variables, igual que el Mount Path del volumen).
-// En local cae a <proyecto>/data.
-const DATA_DIR  = process.env.DATA_DIR ?? path.resolve(process.cwd(), 'data');
+// Directorio de datos persistente. Prioridad:
+//  1. DATA_DIR (env) — si lo defines en Railway, manda (ej. otro Mount Path).
+//  2. En producción: /app/data — coincide con el volumen montado en Railway,
+//     así el historial NO se borra entre deploys (la app corre desde
+//     /app/plataforma-bloqueo, por eso no usamos process.cwd() en prod).
+//  3. En local: <proyecto>/data.
+const DATA_DIR =
+  process.env.DATA_DIR ??
+  (process.env.NODE_ENV === 'production'
+    ? '/app/data'
+    : path.resolve(process.cwd(), 'data'));
 const DATA_FILE = path.join(DATA_DIR, 'historial.json');
 
 function ensureDir(): void {
