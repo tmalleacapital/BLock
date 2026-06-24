@@ -20,7 +20,10 @@ const g = global as typeof global & Partial<HistoryGlobal>;
 g.__history_records ??= [];
 g.__history_loaded  ??= false;
 
-const DATA_DIR  = path.resolve(process.cwd(), 'data');
+// Directorio de datos persistente. En Railway debe apuntar al volumen
+// (define DATA_DIR=/app/data en Variables, igual que el Mount Path del volumen).
+// En local cae a <proyecto>/data.
+const DATA_DIR  = process.env.DATA_DIR ?? path.resolve(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'historial.json');
 
 function ensureDir(): void {
