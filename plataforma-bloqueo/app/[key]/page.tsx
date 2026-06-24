@@ -46,6 +46,9 @@ export default async function InmobiliariaPage({ params }: Props) {
       const { fetchFundamentaStock } = await import('@/lib/inmobiliarias/fundamenta/stock');
       const raw = await fetchFundamentaStock();
       if (Object.keys(raw).length > 0) stockData = raw;
+    } else if (key === 'danacorp') {
+      const { fetchDanacorpStock } = await import('@/lib/inmobiliarias/danacorp/stock');
+      stockData = await fetchDanacorpStock();
     }
   } catch {
     // ORED API no disponible — el formulario carga sin datos de stock
