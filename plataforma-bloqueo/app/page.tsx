@@ -152,7 +152,7 @@ export default function HomePage() {
 
       {/* Header */}
       <header
-        className="sticky top-0 z-10 px-8 py-4 border-b"
+        className="sticky top-0 z-10 px-4 lg:px-8 py-4 border-b"
         style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
       >
         <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
@@ -160,7 +160,7 @@ export default function HomePage() {
         </p>
       </header>
 
-      <main className="flex-1 flex flex-col lg:flex-row gap-6 px-8 py-8 min-h-0">
+      <main className="flex-1 flex flex-col lg:flex-row gap-6 px-4 lg:px-8 py-6 lg:py-8 min-h-0">
 
         {/* ── Columna principal ── */}
         <div className="flex-1 min-w-0 space-y-6">
@@ -178,7 +178,7 @@ export default function HomePage() {
 
           {/* Stats */}
           <div
-            className="grid grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
+            className="grid grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
             style={{ animationDelay: '50ms' }}
           >
             {/* Hoy */}
@@ -228,7 +228,7 @@ export default function HomePage() {
 
             {/* Total */}
             <div
-              className="rounded-2xl border p-5 space-y-2"
+              className="col-span-2 lg:col-span-1 rounded-2xl border p-5 space-y-2"
               style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
             >
               <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>

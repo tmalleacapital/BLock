@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import Sidebar from "@/components/Sidebar";
+import MobileShell from "@/components/MobileShell";
 import ThemeProvider from "@/components/ThemeProvider";
-import TopBar from "@/components/TopBar";
 import { ToastProvider } from "@/components/Toast";
 import JobNotifier from "@/components/JobNotifier";
 import { getSession, COOKIE_NAME, isAdmin } from "@/lib/auth";
@@ -56,16 +55,10 @@ export default async function RootLayout({
         <ThemeProvider>
           <ToastProvider>
             {userEmail ? (
-              <div className="flex h-full">
-                <Sidebar isAdmin={isAdmin(userEmail ?? '')} />
-                <div className="flex-1 min-h-screen overflow-y-auto">
-                  <TopBar email={userEmail} />
-                  <div style={{ paddingTop: '48px' }}>
-                    {children}
-                  </div>
-                </div>
+              <MobileShell isAdmin={isAdmin(userEmail ?? '')} email={userEmail}>
+                {children}
                 <JobNotifier />
-              </div>
+              </MobileShell>
             ) : (
               children
             )}

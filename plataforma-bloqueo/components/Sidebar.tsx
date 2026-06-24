@@ -36,7 +36,16 @@ function ShieldIcon() {
   );
 }
 
-export default function Sidebar({ isAdmin }: { isAdmin?: boolean }) {
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  );
+}
+
+export default function Sidebar({ isAdmin, mobileOpen = false, onClose }: { isAdmin?: boolean; mobileOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const activeKey = pathname.split('/')[1] ?? '';
   const isHome = pathname === '/';
@@ -44,11 +53,29 @@ export default function Sidebar({ isAdmin }: { isAdmin?: boolean }) {
 
   return (
     <aside
-      className="w-60 shrink-0 flex flex-col h-screen sticky top-0 overflow-y-auto"
+      className={`flex flex-col h-screen overflow-y-auto ${
+        mobileOpen
+          ? 'fixed inset-y-0 left-0 z-50 w-60'
+          : 'hidden lg:flex lg:w-60 lg:shrink-0 lg:sticky lg:top-0'
+      }`}
       style={{ backgroundColor: 'var(--card)', borderRight: '1px solid var(--border)' }}
     >
+      {/* Botón cerrar — solo móvil */}
+      {mobileOpen && (
+        <div className="flex justify-end px-3 pt-3 pb-1">
+          <button
+            onClick={onClose}
+            aria-label="Cerrar menú"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: 'var(--muted)' }}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      )}
+
       {/* Brand */}
-      <Link href="/" className="px-4 pt-5 pb-4 block no-underline">
+      <Link href="/" className="px-4 pt-5 pb-4 block no-underline" onClick={onClose}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.svg"
@@ -65,7 +92,7 @@ export default function Sidebar({ isAdmin }: { isAdmin?: boolean }) {
       <div className="mx-4 h-px" style={{ backgroundColor: 'var(--border)' }} />
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 overflow-y-auto" onClick={onClose}>
         <div className="space-y-5">
 
           {/* Inicio */}

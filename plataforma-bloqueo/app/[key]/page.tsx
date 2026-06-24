@@ -56,7 +56,7 @@ export default async function InmobiliariaPage({ params }: Props) {
 
       {/* Header */}
       <header
-        className="sticky top-0 z-10 px-8 py-5 border-b"
+        className="sticky top-0 z-10 px-4 lg:px-8 py-4 lg:py-5 border-b"
         style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
       >
         <div className="flex items-start justify-between">
@@ -80,7 +80,7 @@ export default async function InmobiliariaPage({ params }: Props) {
         </div>
       </header>
 
-      <main className="flex-1 px-8 py-7">
+      <main className="flex-1 px-4 lg:px-8 py-5 lg:py-7">
         <FichaForm
           inmobiliariaKey={key}
           inmobiliariaName={inm.name}

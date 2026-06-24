@@ -39,7 +39,7 @@ export default async function AdminPage() {
   const cardShadow = '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)';
 
   return (
-    <main className="px-6 py-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-400">
+    <main className="px-4 lg:px-6 py-6 lg:py-8 max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-400">
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">

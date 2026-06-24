@@ -3,6 +3,15 @@
 import { useRouter } from 'next/navigation';
 import { useTheme } from './ThemeProvider';
 
+function HamburgerIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  );
+}
+
 function SunIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -22,7 +31,7 @@ function MoonIcon() {
   );
 }
 
-export default function TopBar({ email }: { email?: string }) {
+export default function TopBar({ email, onMenuClick }: { email?: string; onMenuClick?: () => void }) {
   const { theme, toggle } = useTheme();
   const router = useRouter();
 
@@ -34,23 +43,23 @@ export default function TopBar({ email }: { email?: string }) {
 
   return (
     <div
+      className="fixed top-0 left-0 lg:left-60 right-0 z-40 flex items-center justify-between px-4 lg:px-6"
       style={{
-        position: 'fixed',
-        top: 0,
-        left: '240px',
-        right: 0,
         height: '48px',
-        zIndex: 40,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingInline: '24px',
         backgroundColor: 'var(--card)',
         borderBottom: '1px solid var(--border)',
       }}
     >
-      {/* Sesión activa */}
+      {/* Izquierda: hamburguesa (móvil) + sesión */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <button
+          className="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg"
+          style={{ border: '1px solid var(--border)', color: 'var(--muted)', background: 'transparent', cursor: 'pointer' }}
+          onClick={onMenuClick}
+          aria-label="Abrir menú"
+        >
+          <HamburgerIcon />
+        </button>
         <span style={{
           width: '8px',
           height: '8px',
@@ -64,7 +73,7 @@ export default function TopBar({ email }: { email?: string }) {
         </span>
         {email && (
           <>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--foreground)' }}>
+            <span className="hidden sm:inline" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--foreground)' }}>
               {email}
             </span>
             <button
