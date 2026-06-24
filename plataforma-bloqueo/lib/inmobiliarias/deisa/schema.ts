@@ -37,6 +37,9 @@ export function getFieldSchema(): FieldSchema {
       },
       { key: 'telefonoCelular', label: 'Teléfono celular', type: 'phone', required: true },
       { key: 'correoElectronico', label: 'Correo electrónico', type: 'email', required: true },
+      { key: 'proyecto',          label: 'Proyecto',           type: 'cascade-parent', required: true },
+      { key: 'unidad',            label: 'Unidad',             type: 'cascade-child',  required: true },
+      { key: 'tipologia',         label: 'Tipología',          type: 'cascade-auto',   required: true },
     ],
   };
 }
