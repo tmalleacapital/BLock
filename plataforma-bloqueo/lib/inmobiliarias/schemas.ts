@@ -1,4 +1,5 @@
 import type { FieldSchema } from './types';
+import { getFieldSchema as getAraucanaSchema }       from './araucana/schema';
 import { getFieldSchema as getConvetSchema }         from './convet/schema';
 import { getFieldSchema as getDanacorpSchema }       from './danacorp/schema';
 import { getFieldSchema as getDeisaSchema }          from './deisa/schema';
@@ -27,6 +28,7 @@ export interface InmobiliariaEntry {
 }
 
 export const INMOBILIARIAS: InmobiliariaEntry[] = [
+  { key: 'araucana',        name: 'Grupo Araucana',  enabled: true, active: true, paused: true },
   { key: 'convet',          name: 'Convet',          enabled: true, active: true,  emailRecipients: ['vcorrales@convet.cl'] },
   { key: 'danacorp',        name: 'Danacorp',        enabled: true, active: true,  emailRecipients: ['sdonoso@danacorp.cl'] },
   { key: 'deisa',           name: 'Deisa',           enabled: true, active: true,  emailRecipients: ['dsanchez@deisa.cl'] },
@@ -48,6 +50,7 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
 
 export function getSchema(key: string): FieldSchema | undefined {
   switch (key) {
+    case 'araucana':         return getAraucanaSchema();
     case 'convet':          return getConvetSchema();
     case 'danacorp':        return getDanacorpSchema();
     case 'deisa':           return getDeisaSchema();
