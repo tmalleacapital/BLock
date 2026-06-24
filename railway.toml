@@ -1,5 +1,5 @@
 [build]
-rootDirectory = "plataforma-bloqueo"
+buildCommand = "npm --prefix plataforma-bloqueo ci && npm --prefix plataforma-bloqueo run build"
 
 [deploy]
-startCommand = "npm run start"
+startCommand = "npm --prefix plataforma-bloqueo run start"
