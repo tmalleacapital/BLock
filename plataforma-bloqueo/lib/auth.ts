@@ -1,21 +1,23 @@
-import { randomUUID, randomInt } from 'crypto';
+import { randomInt, createHmac, timingSafeEqual } from 'crypto';
 import nodemailer from 'nodemailer';
 
-// ── Global state (same pattern as queue) ──────────────────────────────────────
+// ── Global state (sólo OTP; las sesiones son stateless y firmadas) ────────────
 
 const MAX_OTP_ATTEMPTS = 5;
 
 type AuthGlobal = {
-  __auth_sessions: Map<string, { email: string; expiresAt: number }>;
   __auth_otps: Map<string, { code: string; expiresAt: number; sentAt: number; attempts: number }>;
 };
 
 const g = global as typeof global & Partial<AuthGlobal>;
-g.__auth_sessions ??= new Map();
-g.__auth_otps     ??= new Map();
+g.__auth_otps ??= new Map();
 
-const sessions = g.__auth_sessions!;
-const otps     = g.__auth_otps!;
+const otps = g.__auth_otps!;
+
+// Secreto para firmar las cookies de sesión. Debe ser ESTABLE entre deploys
+// (configúralo en Railway → Variables como AUTH_SECRET). El valor por defecto
+// mantiene las sesiones válidas aunque no se configure, pero es menos seguro.
+const AUTH_SECRET = process.env.AUTH_SECRET || 'b-lock-default-secret-please-set-AUTH_SECRET';
 
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;   // 8 h
 const OTP_TTL_MS     = 10 * 60 * 1000;        // 10 min
@@ -73,21 +75,50 @@ export function verifyOtp(email: string, code: string): boolean {
 
 // ── Session ───────────────────────────────────────────────────────────────────
 
+// Las sesiones son tokens firmados (HMAC-SHA256), sin estado en el servidor.
+// Sobreviven a reinicios/deploys porque sólo dependen de AUTH_SECRET.
+// Formato: base64url(payload) + "." + base64url(HMAC(payload))
+//          payload = "email|expiresAtMs"
+
+function signPayload(payload: string): string {
+  return createHmac('sha256', AUTH_SECRET).update(payload).digest('base64url');
+}
+
 export function createSession(email: string): string {
-  const token = randomUUID();
-  sessions.set(token, { email, expiresAt: Date.now() + SESSION_TTL_MS });
-  return token;
+  const payload = `${email}|${Date.now() + SESSION_TTL_MS}`;
+  const body = Buffer.from(payload, 'utf8').toString('base64url');
+  return `${body}.${signPayload(payload)}`;
 }
 
 export function getSession(token: string): { email: string } | null {
-  const entry = sessions.get(token);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) { sessions.delete(token); return null; }
-  return { email: entry.email };
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
+
+  let payload: string;
+  try {
+    payload = Buffer.from(body, 'base64url').toString('utf8');
+  } catch {
+    return null;
+  }
+
+  const expected = signPayload(payload);
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) return null;
+
+  const sep = payload.lastIndexOf('|');
+  if (sep === -1) return null;
+  const email = payload.slice(0, sep);
+  const expiresAt = Number(payload.slice(sep + 1));
+  if (!email || !Number.isFinite(expiresAt) || Date.now() > expiresAt) return null;
+
+  return { email };
 }
 
+// Stateless: no hay nada que borrar en el servidor; el logout limpia la cookie.
 export function deleteSession(token: string): void {
-  sessions.delete(token);
+  void token;
 }
 
 // ── Email sender ──────────────────────────────────────────────────────────────

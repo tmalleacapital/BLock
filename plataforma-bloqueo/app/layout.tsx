@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import MobileShell from "@/components/MobileShell";
 import ThemeProvider from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/Toast";
@@ -38,11 +37,8 @@ export default async function RootLayout({
   const token = cookieStore.get(COOKIE_NAME)?.value;
   const session = token ? getSession(token) : null;
 
-  // Token exists but session expired → clear cookie and redirect
-  if (token && !session) {
-    redirect('/login');
-  }
-
+  // El middleware ya redirige y limpia cookies inválidas en rutas protegidas;
+  // aquí sólo leemos la sesión para decidir qué renderizar.
   const userEmail = session?.email;
 
   return (
