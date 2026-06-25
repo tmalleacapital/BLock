@@ -1,0 +1,29 @@
+name: Gitleaks
+
+# Escaneo de secretos en CI. La app maneja credenciales de portales y SMTP;
+# este job evita que una credencial llegue accidentalmente al repo.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Permisos mínimos: solo lectura del repo para escanear.
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: Scan secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Historial completo para escanear todos los commits del push/PR.
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

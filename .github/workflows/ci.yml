@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Permisos mínimos: el job de CI solo necesita leer el repo.
+permissions:
+  contents: read
+
+# Cancela runs obsoletos del mismo ref (pushes seguidos).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Lint · Typecheck · Build (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plataforma-bloqueo
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: plataforma-bloqueo/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+  scripts:
+    name: Validar scripts Python
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Compila cada script de automatización: detecta errores de sintaxis
+      # antes de que lleguen a producción (los scripts corren en Railway).
+      - name: Compilar scripts
+        run: |
+          python -m compileall -q "plataforma-bloqueo/scripts"
