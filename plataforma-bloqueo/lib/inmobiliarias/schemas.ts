@@ -33,7 +33,7 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'danacorp',        name: 'Danacorp',        enabled: true, active: true,  emailRecipients: ['sdonoso@danacorp.cl'] },
   { key: 'deisa',           name: 'Deisa',           enabled: true, active: true,  emailRecipients: ['dsanchez@deisa.cl'] },
   { key: 'ecasa',           name: 'Ecasa',           enabled: true, active: true,  emailRecipients: ['canalinversiones@ecasa.cl'] },
-  { key: 'euro',            name: 'Euro',            enabled: true, active: true,  paused: true },
+  { key: 'euro',            name: 'Euro',            enabled: true, active: true  },
   { key: 'fai',             name: 'FAI',             enabled: true, active: true,  emailRecipients: ['Francisco.flores@flesan.cl'] },
   { key: 'fundamenta',      name: 'Fundamenta',      enabled: true, active: true,  emailRecipients: ['andres.lopez@fundamenta.cl'] },
   { key: 'imagina',         name: 'Imagina',         enabled: true, active: true  },
