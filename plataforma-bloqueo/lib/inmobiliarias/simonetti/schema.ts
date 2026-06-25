@@ -40,7 +40,7 @@ export function getFieldSchema(): FieldSchema {
       {
         key: 'fechaNacimiento',
         label: 'Fecha de nacimiento',
-        type: 'text',
+        type: 'fecha',
         required: true,
         helpText: 'Formato DD-MM-AAAA',
       },

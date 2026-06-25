@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'rut' | 'email' | 'phone' | 'select' | 'cascade-parent' | 'cascade-child' | 'cascade-auto';
+export type FieldType = 'text' | 'rut' | 'fecha' | 'email' | 'phone' | 'select' | 'cascade-parent' | 'cascade-child' | 'cascade-auto';
 
 export interface UnidadEntry {
   unidad: string;

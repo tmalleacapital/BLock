@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { FieldDef, FieldSchema, RunResult, UnidadEntry } from '@/lib/inmobiliarias/types';
 import { savePendingJob, claimPendingJob } from '@/lib/pendingJobs';
 
@@ -46,6 +46,12 @@ const inputNormal = {
 };
 
 const inputFocusRing = 'focus:ring-[color:color-mix(in_srgb,var(--accent)_22%,transparent)] focus:border-[color:var(--accent)]';
+
+function formatFecha(raw: string): string {
+  // Sólo dígitos, máximo 8 (DDMMAAAA), agrupados como DD-MM-AAAA con guiones.
+  const d = raw.replace(/\D/g, '').slice(0, 8);
+  return [d.slice(0, 2), d.slice(2, 4), d.slice(4, 8)].filter(Boolean).join('-');
+}
 
 function formatRut(raw: string): string {
   const clean = raw.replace(/[^0-9kK]/g, '').toUpperCase();
@@ -149,10 +155,17 @@ function FieldInput({
     <input
       id={field.key}
       type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
-      inputMode={field.type === 'phone' ? 'tel' : undefined}
+      inputMode={field.type === 'phone' ? 'tel' : field.type === 'fecha' ? 'numeric' : undefined}
+      maxLength={field.type === 'fecha' ? 10 : undefined}
       autoComplete={field.type === 'email' ? 'email' : undefined}
       placeholder={
-        field.type === 'rut' ? '12.345.678-9' : field.type === 'phone' ? '+56 9 1234 5678' : undefined
+        field.type === 'rut'
+          ? '12.345.678-9'
+          : field.type === 'phone'
+            ? '+56 9 1234 5678'
+            : field.type === 'fecha'
+              ? 'DD-MM-AAAA'
+              : undefined
       }
       value={value}
       onChange={(e) => onChange(field.key, e.target.value)}
@@ -212,6 +225,12 @@ export default function FichaForm({
 
   const submitSnapshot = useRef<{ rut: string; nombre: string } | null>(null);
 
+  // Claves de campos con máscara de fecha (DD-MM-AAAA).
+  const fechaKeys = useMemo(
+    () => new Set(schema.fields.filter((f) => f.type === 'fecha').map((f) => f.key)),
+    [schema],
+  );
+
   const handleReset = () => {
     setValues({});
     setResult(null);
@@ -223,7 +242,12 @@ export default function FichaForm({
 
   const handleChange = useCallback((key: string, value: string) => {
     setValues((prev) => {
-      const next = { ...prev, [key]: key === 'rut' ? formatRut(value) : value };
+      const formatted = key === 'rut'
+        ? formatRut(value)
+        : fechaKeys.has(key)
+          ? formatFecha(value)
+          : value;
+      const next = { ...prev, [key]: formatted };
       if (key === 'proyecto') {
         next.unidad    = '';
         next.tipologia = '';
@@ -235,7 +259,7 @@ export default function FichaForm({
       }
       return next;
     });
-  }, [stockData]);
+  }, [stockData, fechaKeys]);
 
   // Polling effect
   useEffect(() => {
