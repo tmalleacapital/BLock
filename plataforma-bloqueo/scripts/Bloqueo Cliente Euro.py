@@ -43,9 +43,15 @@ def _norm(texto: str) -> str:
     return s.lower().replace("(", " ").replace(")", " ").replace("/", " ").replace(".", " ")
 
 
+def _fecha_guiones(fecha: str) -> str:
+    """Normaliza la fecha a DD-MM-AAAA aceptando / . - o espacios como separador."""
+    f = fecha.strip().replace("/", "-").replace(".", "-")
+    return "-".join(p for p in f.replace(" ", "-").split("-") if p)
+
+
 def calcular_rango_edad(fecha_nacimiento: str) -> str:
-    """Devuelve el rango de edad dada una fecha 'DD-MM-AAAA'."""
-    dia, mes, anio = fecha_nacimiento.split("-")
+    """Devuelve el rango de edad dada una fecha 'DD-MM-AAAA' (acepta / . - como separador)."""
+    dia, mes, anio = _fecha_guiones(fecha_nacimiento).split("-")
     nac = datetime.date(int(anio), int(mes), int(dia))
     hoy = datetime.date.today()
     edad = hoy.year - nac.year - ((hoy.month, hoy.day) < (nac.month, nac.day))
@@ -292,7 +298,7 @@ def bloquear_cliente(data: dict) -> dict:
                 rellenar('[data-cy="create-customer-names"]', data.get("nombres", ""))
                 apellidos = f"{data.get('apellidoPaterno', '')} {data.get('apellidoMaterno', '')}".strip()
                 rellenar('[data-cy="create-customer-lastname"]', apellidos)
-                rellenar('[data-cy="create-customer-birthday"]', data.get("fechaNacimiento", ""))
+                rellenar('[data-cy="create-customer-birthday"]', _fecha_guiones(data.get("fechaNacimiento", "")))
 
                 # Teléfono móvil (segundo vti__input — el primero es "Teléfono fijo")
                 tel = page.locator("input.vti__input").nth(1)
