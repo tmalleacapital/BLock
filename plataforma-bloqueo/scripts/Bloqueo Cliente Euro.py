@@ -27,7 +27,9 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-URL_LOGIN = "https://euro.mobysuite.com/login"
+BASE_URL = "https://euro.mobysuite.com"
+URL_LOGIN = f"{BASE_URL}/login"
+URL_CUSTOMERS = f"{BASE_URL}/customers"
 CREDS = {
     "usuario": os.environ['EURO_USER'],
     "clave":   os.environ['EURO_PASS'],
@@ -225,14 +227,30 @@ def bloquear_cliente(data: dict) -> dict:
             # ── 3. Iniciar sesión ──────────────────────────────────────────────
             page.click('button[data-cy="login-submit"]')
             page.wait_for_load_state("networkidle")
+            page.wait_for_timeout(2_000)
 
             # ── 4. Ir a Clientes ───────────────────────────────────────────────
-            page.locator('a[href="/customers"]').wait_for(state="visible", timeout=30_000)
-            page.locator('a[href="/customers"]').click()
+            # Intentar el enlace del menú; si no aparece (menú colapsado / render
+            # tardío del SPA), navegar directo a /customers — más robusto.
+            try:
+                link = page.locator('a[href="/customers"]')
+                link.wait_for(state="visible", timeout=12_000)
+                link.click()
+            except Exception:
+                page.goto(URL_CUSTOMERS, wait_until="domcontentloaded")
             page.wait_for_load_state("networkidle")
+            page.wait_for_timeout(1_500)
 
             # ── 5. Crear cliente ───────────────────────────────────────────────
-            page.locator('button[data-cy="button-create-customer"]').wait_for(state="visible", timeout=30_000)
+            # Si el botón no aparece, reintentar una navegación directa (cubre el
+            # caso en que el login aún no había propagado la sesión al primer load).
+            try:
+                page.locator('button[data-cy="button-create-customer"]').wait_for(state="visible", timeout=20_000)
+            except Exception:
+                page.goto(URL_CUSTOMERS, wait_until="domcontentloaded")
+                page.wait_for_load_state("networkidle")
+                page.wait_for_timeout(1_500)
+                page.locator('button[data-cy="button-create-customer"]').wait_for(state="visible", timeout=20_000)
             page.locator('button[data-cy="button-create-customer"]').click()
             page.wait_for_load_state("networkidle")
 
