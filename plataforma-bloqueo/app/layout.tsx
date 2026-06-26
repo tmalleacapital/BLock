@@ -5,6 +5,7 @@ import MobileShell from "@/components/MobileShell";
 import ThemeProvider from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/Toast";
 import JobNotifier from "@/components/JobNotifier";
+import FaqChat from "@/components/FaqChat";
 import { getSession, COOKIE_NAME, isAdmin } from "@/lib/auth";
 import "./globals.css";
 
@@ -54,6 +55,7 @@ export default async function RootLayout({
               <MobileShell isAdmin={isAdmin(userEmail ?? '')} email={userEmail}>
                 {children}
                 <JobNotifier />
+                <FaqChat />
               </MobileShell>
             ) : (
               children
