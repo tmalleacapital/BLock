@@ -34,6 +34,16 @@ function CloseIcon() {
   );
 }
 
+function HelpIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
 export default function FaqChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
@@ -55,6 +65,57 @@ export default function FaqChat() {
 
   return (
     <>
+      {/* Etiqueta indicadora + halo (solo con el chat cerrado) */}
+      {!open && (
+        <>
+          <span
+            aria-hidden
+            className="fixed bottom-5 right-5 z-40 rounded-full animate-ping pointer-events-none"
+            style={{ width: '56px', height: '56px', backgroundColor: 'var(--accent)', opacity: 0.18 }}
+          />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Abrir preguntas frecuentes"
+            className="fixed z-50 flex items-center gap-2 rounded-full py-2 pl-3 pr-4"
+            style={{
+              bottom: '32px',
+              right: '88px',
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--accent)',
+              color: 'var(--foreground)',
+              boxShadow: cardShadow,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span
+              className="flex items-center justify-center rounded-full shrink-0"
+              style={{ width: '20px', height: '20px', backgroundColor: 'color-mix(in srgb, var(--accent) 16%, transparent)', color: 'var(--accent)' }}
+            >
+              <HelpIcon />
+            </span>
+            <span className="text-[13px] font-medium">
+              ¿Dudas?{' '}
+              <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Preguntas frecuentes</span>
+            </span>
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                right: '-7px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: 0,
+                height: 0,
+                borderTop: '7px solid transparent',
+                borderBottom: '7px solid transparent',
+                borderLeft: '8px solid var(--accent)',
+              }}
+            />
+          </button>
+        </>
+      )}
+
       {/* Botón flotante */}
       <button
         type="button"
