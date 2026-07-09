@@ -20,6 +20,7 @@ const SCRIPTS: Record<string, string> = {
   fundamenta: 'Bloqueo Clientes Fundamenta.py',
   convet:     'Bloqueo Clientes Convet.py',
   danacorp:   'Bloqueo Cliente Danacorp.py',
+  deisa:      'Bloqueo Cliente Deisa.py',
   leben:      'Bloqueo Cliente Leben.py',
 };
 
