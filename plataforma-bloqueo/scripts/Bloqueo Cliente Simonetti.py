@@ -187,7 +187,7 @@ def bloquear_cliente(data: dict) -> dict:
             vs_select(page, 'create-customer-media-information', MEDIO_INFO)
 
             # ── 4. Siguiente -> Paso 2 · Dirección ─────────────────────────────
-            page.get_by_role("button", name="Siguiente").click()
+            page.locator('[data-cy="next_btn"]').click()
             page.locator('[data-cy="create-customer-address"]').wait_for(state="visible", timeout=30_000)
             page.wait_for_timeout(800)
 
@@ -198,13 +198,13 @@ def bloquear_cliente(data: dict) -> dict:
             _rellenar_cy(page, 'create-customer-city', data.get("ciudad", ""))
 
             # ── 5. Guardar cliente ─────────────────────────────────────────────
-            page.get_by_role("button", name="Guardar").first.click()
+            page.locator('[data-cy="save_btn"]').first.click()
             page.wait_for_timeout(1_500)
             # Modal "Éxito: El cliente se guardó exitosamente" (SweetAlert, autocierra)
             page.wait_for_timeout(2_500)
 
             # ── 6. Cotizar ─────────────────────────────────────────────────────
-            cotizar = page.get_by_role("button", name="Cotizar")
+            cotizar = page.locator('[data-cy="quote_btn"]')
             cotizar.wait_for(state="visible", timeout=30_000)
             cotizar.click()
             page.wait_for_load_state("networkidle")
