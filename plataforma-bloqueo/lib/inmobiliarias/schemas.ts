@@ -41,11 +41,11 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'ingevec',         name: 'Ingevec',         enabled: true, active: false },
   { key: 'larrain-prieto',  name: 'Larraín Prieto',  enabled: true, active: false },
   { key: 'leben',           name: 'Leben',           enabled: true, active: true,  emailRecipients: ['lsilva@ileben.cl', 'jfoppiano@ileben.cl'] },
-  { key: 'maestra',         name: 'Maestra',         enabled: true, active: true,  paused: true },
+  { key: 'maestra',         name: 'Maestra',         enabled: true, active: true  },
   { key: 'norte-verde',     name: 'Norte Verde',     enabled: true, active: false },
   { key: 'paz',             name: 'Paz',             enabled: true, active: true,  emailRecipients: ['issys.ferrer@pazcorp.cl', 'fernando.florindo@pazcorp.cl'] },
   { key: 'sento',           name: 'Sento',           enabled: true, active: true,  emailRecipients: ['mvarela@sento.cl'] },
-  { key: 'simonetti',       name: 'Simonetti',       enabled: true, active: true,  paused: true },
+  { key: 'simonetti',       name: 'Simonetti',       enabled: true, active: true  },
   { key: 'vicuna-mackenna', name: 'Vicuña Mackenna', enabled: true, active: false },
   { key: 'viva',            name: 'Viva',            enabled: true, active: true,  emailRecipients: ['ventas@iviva.cl'] },
 ];
