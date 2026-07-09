@@ -1,6 +1,22 @@
 """
 Bloqueo Cliente Simonetti.py
-Automatización de bloqueo de clientes en el portal Simonetti (Mobysuite).
+Automatización de bloqueo de clientes en el portal Simonetti (Mobysuite v1.18).
+
+Flujo:
+  1. Login (SIMONETTI_USER / SIMONETTI_PASS) + CAPTCHA Altcha.
+  2. Clientes -> Crear cliente (wizard de 6 pasos).
+  3. Paso 1 "Datos de cliente" — SOLO campos necesarios:
+     RUT (sin puntos), Nombres, Apellidos (paterno+materno), Género, Fecha nac.,
+     Nacionalidad, Profesión=OTROS (fija), Teléfono móvil, Email,
+     Tipo de contacto=VISITA, Medio de información=CAPITAL INTELIGENTE.
+  4. Siguiente -> Paso 2 "Dirección": Dirección, Región, Comuna, Ciudad.
+  5. Guardar -> crea el cliente -> botón "Cotizar".
+  6. Cotización: Proyecto (1º) -> Tipo de bien=Departamento -> N° de bien (1º) ->
+     Agregar bien -> Medio de información=CAPITAL INTELIGENTE, Tipo contacto=VISITA ->
+     Guardar (save_quote) = bloqueo.
+
+Los desplegables del cliente son vue-select (input.vs__search dentro del contenedor
+[data-cy=...]); se seleccionan tipeando y confirmando con Enter.
 
 Uso standalone:  python "Bloqueo Cliente Simonetti.py"
 Uso con datos:   python "Bloqueo Cliente Simonetti.py" '{"rut":"...", ...}'
@@ -8,9 +24,6 @@ Uso con datos:   python "Bloqueo Cliente Simonetti.py" '{"rut":"...", ...}'
 
 import sys
 import json
-import re
-import datetime
-import unicodedata
 import os
 from playwright.sync_api import sync_playwright, Page
 
@@ -28,103 +41,46 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-URL_LOGIN = "https://simonetti.mobysuite.com/login"
+URL_LOGIN     = "https://simonetti.mobysuite.com/login"
+URL_CUSTOMERS = "https://simonetti.mobysuite.com/customers"
 CREDS = {
     "usuario": os.environ['SIMONETTI_USER'],
     "clave":   os.environ['SIMONETTI_PASS'],
 }
 
-# Nombres oficiales → nombres cortos que usa el portal Simonetti
-REGION_PORTAL = {
-    "Región del Libertador General Bernardo O'Higgins": "Región de O'Higgins",
-    "Región de Aysén del General Carlos Ibáñez del Campo": "Región de Aysén",
-    "Región de Magallanes y de la Antártica Chilena": "Región de Magallanes",
-}
+# Valores fijos del bloqueo (definición comercial de Capital Inteligente).
+PROFESION_FIJA = "OTROS"
+TIPO_CONTACTO  = "VISITA"
+MEDIO_INFO     = "CAPITAL INTELIGENTE"
 
 
-def _norm(texto: str) -> str:
-    """Elimina acentos, paréntesis y pasa a minúsculas para comparación."""
-    s = unicodedata.normalize("NFD", texto)
-    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
-    return s.lower().replace("(", " ").replace(")", " ").replace("/", " ").replace(".", " ")
+def _rut_sin_puntos(rut: str) -> str:
+    """El campo RUT del portal no acepta puntos: '19.851.181-1' -> '19851181-1'."""
+    return rut.replace(".", "").replace(" ", "").upper()
 
 
-def _fecha_guiones(fecha: str) -> str:
-    """Normaliza la fecha a DD-MM-AAAA aceptando / . - o espacios como separador."""
-    f = fecha.strip().replace("/", "-").replace(".", "-")
-    return "-".join(p for p in f.replace(" ", "-").split("-") if p)
-
-
-def calcular_rango_edad(fecha_nacimiento: str) -> str:
-    """Devuelve el rango de edad dada una fecha 'DD-MM-AAAA' (acepta / . - como separador)."""
-    dia, mes, anio = _fecha_guiones(fecha_nacimiento).split("-")
-    nac = datetime.date(int(anio), int(mes), int(dia))
-    hoy = datetime.date.today()
-    edad = hoy.year - nac.year - ((hoy.month, hoy.day) < (nac.month, nac.day))
-    if edad < 26:   return "1-25"
-    elif edad < 36: return "26-35"
-    elif edad < 46: return "36-45"
-    elif edad < 56: return "46-55"
-    elif edad < 66: return "56-65"
-    else:           return "66 o más"
-
-
-def vs_placeholder(page: Page, placeholder_fragment: str, opcion: str) -> None:
-    """Selecciona en un vue-select identificado por texto de placeholder."""
-    inp = page.locator(f'input.vs__search[placeholder*="{placeholder_fragment}"]')
-    inp.scroll_into_view_if_needed()
-    inp.click()
-    inp.fill(opcion)
-    page.wait_for_timeout(300)
-    page.locator('.vs__dropdown-option').filter(has_text=opcion).first.click()
-    page.wait_for_timeout(200)
-
-
-def vs_placeholder_nth(page: Page, placeholder_fragment: str, n: int) -> None:
-    """Abre un vue-select por placeholder y selecciona la n-ésima opción (1-indexed)."""
-    inp = page.locator(f'input.vs__search[placeholder*="{placeholder_fragment}"]')
-    inp.scroll_into_view_if_needed()
-    inp.click()
-    page.wait_for_timeout(400)
-    page.locator('.vs__dropdown-option').nth(n - 1).click()
-    page.wait_for_timeout(200)
-
-
-def vs_placeholder_fuzzy(page: Page, placeholder_fragment: str, opcion: str) -> None:
-    """Abre vue-select por placeholder, tipea 5 letras y elige por fuzzy (ignora género -o/-a)."""
-    search_term = _norm(opcion).replace(" ", "")[:5]
-    inp = page.locator(f'input.vs__search[placeholder*="{placeholder_fragment}"]')
-    inp.scroll_into_view_if_needed()
+def vs_select(page: Page, cy: str, texto: str) -> None:
+    """Selecciona en un vue-select ubicado por su contenedor data-cy:
+    abre, tipea el texto y confirma con Enter (elige la primera coincidencia)."""
+    cont = page.locator(f'[data-cy="{cy}"]')
+    cont.scroll_into_view_if_needed()
+    inp = cont.locator('input.vs__search')
     inp.click()
     page.wait_for_timeout(200)
-    page.keyboard.type(search_term, delay=80)
+    page.keyboard.type(texto, delay=50)
     page.wait_for_timeout(600)
-
-    opts = page.locator('.vs__dropdown-option')
-    opts.first.wait_for(state="visible", timeout=20_000)
-    page.wait_for_timeout(200)
-
-    total = opts.count()
-    target_words = [w for w in _norm(opcion).split() if len(w) > 2]
-    best_idx, best_score = 0, -1
-
-    for i in range(total):
-        opt_text = _norm(opts.nth(i).text_content() or "")
-        opt_words = [w for w in opt_text.split() if len(w) > 2]
-        score = sum(
-            1 for tw in target_words
-            if any(bw[:5] == tw[:5] for bw in opt_words)
-        )
-        if score > best_score:
-            best_score, best_idx = score, i
-
-    opts.nth(best_idx).scroll_into_view_if_needed()
-    opts.nth(best_idx).click()
-    page.wait_for_timeout(200)
+    # Preferir click sobre la opción exacta; si no, Enter sobre la resaltada.
+    opt = page.locator('li.vs__dropdown-option, .vs__dropdown-option').filter(has_text=texto).first
+    try:
+        opt.wait_for(state="visible", timeout=6_000)
+        opt.click()
+    except Exception:
+        page.keyboard.press("Enter")
+    page.wait_for_timeout(300)
 
 
 def placeholder_select_nth(page: Page, label: str, n: int) -> None:
-    """Abre un div.placeholderInputText (vue-select) y elige la n-ésima opción (1-indexed)."""
+    """Abre un div.placeholderInputText (selector de la cotización) y elige la n-ésima opción."""
     tgt = page.locator('div.placeholderInputText').filter(has_text=label).first
     tgt.wait_for(state="visible", timeout=30_000)
     tgt.scroll_into_view_if_needed()
@@ -134,46 +90,13 @@ def placeholder_select_nth(page: Page, label: str, n: int) -> None:
     opt.wait_for(state="visible", timeout=20_000)
     opt.scroll_into_view_if_needed()
     opt.click()
-    page.wait_for_timeout(200)
+    page.wait_for_timeout(300)
 
 
 def placeholder_select_texto(page: Page, label: str, opcion: str) -> None:
-    """Abre un div.placeholderInputText (vue-select) y elige opción por texto.
-    Primero intenta filter(has_text). Si no lo encuentra, busca el label en el DOM
-    y navega al div.placeholderInputText más cercano."""
+    """Abre un div.placeholderInputText (selector de la cotización) y elige por texto."""
     tgt = page.locator('div.placeholderInputText').filter(has_text=label).first
-    try:
-        tgt.wait_for(state="visible", timeout=5_000)
-    except Exception:
-        # Label está fuera del div — buscarlo en el DOM circundante
-        clicked = page.evaluate(
-            """(label) => {
-                const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-                let node;
-                while ((node = walker.nextNode())) {
-                    if (node.textContent.trim().toLowerCase() === label.toLowerCase()) {
-                        let el = node.parentElement;
-                        for (let i = 0; i < 8; i++) {
-                            if (!el) break;
-                            const ph = el.querySelector('div.placeholderInputText');
-                            if (ph) { ph.scrollIntoView({block:'center'}); ph.click(); return true; }
-                            el = el.parentElement;
-                        }
-                    }
-                }
-                return false;
-            }""",
-            label,
-        )
-        if not clicked:
-            raise ValueError(f'div.placeholderInputText con label "{label}" no encontrado')
-        page.wait_for_timeout(500)
-        opt = page.locator('li.vs__dropdown-option').filter(has_text=opcion).first
-        opt.wait_for(state="visible", timeout=20_000)
-        opt.scroll_into_view_if_needed()
-        opt.click()
-        page.wait_for_timeout(200)
-        return
+    tgt.wait_for(state="visible", timeout=30_000)
     tgt.scroll_into_view_if_needed()
     tgt.click()
     page.wait_for_timeout(500)
@@ -181,12 +104,19 @@ def placeholder_select_texto(page: Page, label: str, opcion: str) -> None:
     opt.wait_for(state="visible", timeout=20_000)
     opt.scroll_into_view_if_needed()
     opt.click()
-    page.wait_for_timeout(200)
+    page.wait_for_timeout(300)
+
+
+def _rellenar_cy(page: Page, cy: str, valor: str) -> None:
+    loc = page.locator(f'[data-cy="{cy}"]')
+    loc.scroll_into_view_if_needed()
+    loc.click()
+    loc.fill(valor)
 
 
 def bloquear_cliente(data: dict) -> dict:
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, slow_mo=350)
+        browser = p.chromium.launch(headless=True, slow_mo=300)
         context = browser.new_context(viewport={"width": 1920, "height": 1080}, locale='es-CL')
         page = context.new_page()
 
@@ -196,7 +126,7 @@ def bloquear_cliente(data: dict) -> dict:
             page.fill("#login-email", CREDS["usuario"])
             page.fill('input[type="password"]', CREDS["clave"])
 
-            # ── 2. CAPTCHA Altcha (prueba matemática — el browser la resuelve) ──
+            # CAPTCHA Altcha (proof-of-work que resuelve el propio browser)
             chk = page.locator('.altcha-checkbox input[type="checkbox"]')
             chk.wait_for(state="visible", timeout=30_000)
             chk.scroll_into_view_if_needed()
@@ -206,250 +136,97 @@ def bloquear_cliente(data: dict) -> dict:
                 '() => { const el = document.querySelector(".altcha-checkbox input[type=\'checkbox\']"); return el ? el.checked : false; }',
                 timeout=180_000,
             )
-
-            # ── 3. Iniciar sesión ──────────────────────────────────────────────
             page.click('button[data-cy="login-submit"]')
-            page.wait_for_load_state("networkidle")
-
-            # ── 4. Ir a Clientes ───────────────────────────────────────────────
-            page.locator('a[href="/customers"]').wait_for(state="visible", timeout=30_000)
-            page.locator('a[href="/customers"]').click()
-            page.wait_for_load_state("networkidle")
-
-            # ── 5. Crear cliente ───────────────────────────────────────────────
-            page.locator('button[data-cy="button-create-customer"]').wait_for(state="visible", timeout=30_000)
-            page.locator('button[data-cy="button-create-customer"]').click()
-            page.wait_for_load_state("networkidle")
-            # Esperar a que el b-overlay aparezca y luego desaparezca
-            try:
-                page.locator('div.b-overlay.position-fixed').wait_for(state="visible", timeout=3_000)
-            except Exception:
-                pass
-            try:
-                page.locator('div.b-overlay.position-fixed').wait_for(state="hidden", timeout=15_000)
-            except Exception:
-                pass
-
-            # ── 6. Datos personales ────────────────────────────────────────────
-            def rellenar(selector: str, valor: str) -> None:
-                loc = page.locator(selector)
-                loc.scroll_into_view_if_needed()
-                loc.click()
-                loc.fill(valor)
-
-            page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=30_000)
-
-            # Ingresar RUT — la página recarga y navega si el cliente ya existe
-            url_antes = page.url
-            rellenar('[data-cy="create-customer-rut"]', data.get("rut", ""))
-            page.keyboard.press("Tab")
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(1_500)
 
-            url_actual = page.url
+            # ── 2. Ir a Clientes -> Crear cliente ──────────────────────────────
+            page.goto(URL_CUSTOMERS, wait_until="networkidle")
+            page.wait_for_timeout(1_000)
+            page.get_by_role("button", name="Crear cliente").click()
+            page.locator('[data-cy="create-customer-rut"]').wait_for(state="visible", timeout=30_000)
+            page.wait_for_timeout(800)
 
-            # Detección primaria: la URL cambió → el portal navegó al perfil del cliente
-            if url_actual != url_antes and '/create' not in url_actual:
-                cliente_ya_existe = True
-                quote_ya_visible = page.locator('button[data-cy="quote_btn"]').is_visible()
-            else:
-                # Detección secundaria: formulario pre-rellenado en la misma URL
-                quote_ya_visible = False
-                try:
-                    nombres_autofill = page.evaluate(
-                        "document.querySelector('[data-cy=\"create-customer-names\"]')?.value || ''"
-                    ).strip()
-                except Exception:
-                    nombres_autofill = ""
-                cliente_ya_existe = nombres_autofill != ""
+            # ── 3. Paso 1 · Datos de cliente ───────────────────────────────────
+            # RUT (sin puntos); el portal rechaza el RUT si ya está asociado a otro usuario.
+            _rellenar_cy(page, 'create-customer-rut', _rut_sin_puntos(data.get("rut", "")))
+            page.keyboard.press("Tab")
+            page.wait_for_timeout(2_000)
+            if page.locator('text=asociado a otro usuario').first.is_visible():
+                return {"status": "error",
+                        "message": "El RUT ya está asociado a otro asesor en Simonetti; no se puede bloquear."}
 
-            if not cliente_ya_existe:
-                # ── Cliente nuevo: rellenar formulario completo ────────────────
-                rellenar('[data-cy="create-customer-names"]', data.get("nombres", ""))
-                apellidos = f"{data.get('apellidoPaterno', '')} {data.get('apellidoMaterno', '')}".strip()
-                rellenar('[data-cy="create-customer-lastname"]', apellidos)
-                rellenar('[data-cy="create-customer-birthday"]', _fecha_guiones(data.get("fechaNacimiento", "")))
+            _rellenar_cy(page, 'create-customer-names', data.get("nombres", ""))
+            apellidos = f"{data.get('apellidoPaterno', '')} {data.get('apellidoMaterno', '')}".strip()
+            _rellenar_cy(page, 'create-customer-lastname', apellidos)
+            _rellenar_cy(page, 'create-customer-birthday', data.get("fechaNacimiento", ""))
 
-                # Teléfono móvil (segundo vti__input — el primero es "Teléfono fijo")
-                tel = page.locator("input.vti__input").nth(1)
-                tel.scroll_into_view_if_needed()
-                tel.click()
-                tel.fill(data.get("telefonoCelular", ""))
-                page.wait_for_timeout(200)
+            # Teléfono móvil (segundo vti__input; el primero es "Teléfono fijo")
+            tel = page.locator("input.vti__input").nth(1)
+            tel.scroll_into_view_if_needed()
+            tel.click()
+            tel.fill(data.get("telefonoCelular", ""))
+            page.wait_for_timeout(200)
 
-                rellenar('[data-cy="create-customer-email"]', data.get("correoElectronico", ""))
+            _rellenar_cy(page, 'create-customer-email', data.get("correoElectronico", ""))
 
-                # ── 7. Tipo de comprador → INVERSIONISTA ──────────────────────
-                vs_placeholder(page, "Tipo de comprador", "INVERSIONISTA")
+            vs_select(page, 'create-customer-gender', data.get("genero", ""))
+            vs_select(page, 'create-customer-nationality', data.get("nacionalidad", ""))
+            vs_select(page, 'create-customer-profession', PROFESION_FIJA)
+            vs_select(page, 'create-customer-contact-type', TIPO_CONTACTO)
+            vs_select(page, 'create-customer-media-information', MEDIO_INFO)
 
-                # ── 8. Tipo de contacto → VISITA ──────────────────────────────
-                vs_placeholder(page, "tipo de contacto", "VISITA")
+            # Teléfono/email duplicados: el portal muestra un modal bloqueante.
+            if page.locator('text=teléfono ya existente').first.is_visible():
+                return {"status": "error",
+                        "message": "El teléfono ya está registrado para otro cliente en Simonetti."}
 
-                # ── 9. Profesión ──────────────────────────────────────────────
-                profesion_input = data.get("profesion", "")
-                search_term = _norm(profesion_input).split()[0][:4]
+            # ── 4. Siguiente -> Paso 2 · Dirección ─────────────────────────────
+            page.get_by_role("button", name="Siguiente").click()
+            page.locator('[data-cy="create-customer-address"]').wait_for(state="visible", timeout=30_000)
+            page.wait_for_timeout(800)
 
-                prof_inp = page.locator('input.vs__search[placeholder="Seleccione Profesión"]')
-                prof_inp.scroll_into_view_if_needed()
-                prof_inp.click()
-                page.wait_for_timeout(200)
-                page.keyboard.type(search_term, delay=100)
-                page.wait_for_timeout(700)
+            _rellenar_cy(page, 'create-customer-address', data.get("direccion", ""))
+            vs_select(page, 'create-customer-region', data.get("region", ""))
+            page.wait_for_timeout(800)  # la comuna se puebla tras elegir región
+            vs_select(page, 'create-customer-commune', data.get("comuna", ""))
+            _rellenar_cy(page, 'create-customer-city', data.get("ciudad", ""))
 
-                opts = page.locator('.vs__dropdown-option')
-                opts.first.wait_for(state="visible", timeout=20_000)
-                page.wait_for_timeout(150)
+            # ── 5. Guardar cliente ─────────────────────────────────────────────
+            page.get_by_role("button", name="Guardar").first.click()
+            page.wait_for_timeout(1_500)
+            # Modal "Éxito: El cliente se guardó exitosamente" (SweetAlert, autocierra)
+            page.wait_for_timeout(2_500)
 
-                total = opts.count()
-                target_words = [w for w in _norm(profesion_input).split() if len(w) > 2]
-                best_idx, best_score, best_word_count = 0, -1, float('inf')
-
-                for i in range(total):
-                    opt_text = _norm(opts.nth(i).text_content() or "")
-                    opt_words = [w for w in opt_text.split() if len(w) > 2]
-                    score = sum(
-                        1 for tw in target_words
-                        if any(bw.startswith(tw) or tw.startswith(bw) for bw in opt_words)
-                    )
-                    # Ante empate, preferir la opción con menos palabras (más genérica)
-                    if score > best_score or (score == best_score and len(opt_words) < best_word_count):
-                        best_score, best_idx, best_word_count = score, i, len(opt_words)
-
-                opts.nth(best_idx).scroll_into_view_if_needed()
-                opts.nth(best_idx).click()
-                page.wait_for_timeout(200)
-
-                # ── 10. Género ────────────────────────────────────────────────
-                vs_placeholder(page, "Seleccione Sexo", data.get("genero", ""))
-
-                # ── 11. Estado civil → siempre Soltero ───────────────────────
-                vs_placeholder(page, "Seleccione Estado civil", "Soltero")
-
-                # ── 12. Nacionalidad ──────────────────────────────────────────
-                vs_placeholder_fuzzy(page, "Seleccione Nacionalidad", data.get("nacionalidad", ""))
-
-                # ── 13. Rango de edad ─────────────────────────────────────────
-                rango = calcular_rango_edad(data.get("fechaNacimiento", "01-01-1990"))
-                vs_placeholder(page, "Rango de edad", rango)
-
-                # ── 14. Expectativa → Muy Alta ────────────────────────────────
-                vs_placeholder(page, "Seleccione Expectativa", "Muy Alta")
-
-                # ── 15. Destino de compra → Inversión ─────────────────────────
-                vs_placeholder(page, "Seleccione Destino de compra", "Inversión")
-
-                # ── 16. Grupo familiar → primera opción ───────────────────────
-                vs_placeholder_nth(page, "Seleccione Grupo familiar", 1)
-
-                # ── 17. Actividad → Empleado fijo ─────────────────────────────
-                vs_placeholder(page, "Seleccione Actividad", "Empleado fijo")
-
-                # ── 18. Rango de renta → tercera opción ───────────────────────
-                vs_placeholder_nth(page, "Rango de renta", 3)
-
-                # ── 19. Medio → REFERIDO ──────────────────────────────────────
-                vs_placeholder(page, "Seleccione medio", "REFERIDO")
-
-                # ── Dirección del cliente ─────────────────────────────────────
-                page.locator('span.stepTitle', has_text="Dirección del cliente").click()
-                page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(2_000)
-
-                rellenar('[data-cy="create-customer-address"]', data.get("direccion", ""))
-
-                region_inp = page.locator('input.vs__search[placeholder*="Seleccione Región"]').first
-                region_inp.scroll_into_view_if_needed()
-                region_inp.click()
-                _region = data.get("region", "")
-                # Traducir nombre oficial al nombre corto del portal si aplica
-                _region_portal = REGION_PORTAL.get(_region, _region)
-                _region_search = _region_portal.split("'")[0].split("´")[0][:20].strip()
-                page.keyboard.type(_region_search, delay=50)
-                page.wait_for_timeout(600)
-                opts = page.locator('.vs__dropdown-option')
-                opts.first.wait_for(state="visible", timeout=30_000)
-                opts.first.scroll_into_view_if_needed()
-                opts.first.click()
-                page.wait_for_timeout(400)
-
-                # Comuna se habilita tras seleccionar región (excluir el input disabled)
-                _comuna = data.get("comuna", "")
-                comuna_inp = page.locator('input.vs__search[placeholder="Seleccione Comuna"]:not([disabled])')
-                comuna_inp.wait_for(state="visible", timeout=20_000)
-                comuna_inp.scroll_into_view_if_needed()
-                comuna_inp.click()
-                page.wait_for_timeout(400)
-                page.keyboard.type(_comuna, delay=50)
-                page.wait_for_timeout(500)
-                page.locator('.vs__dropdown-option').filter(
-                    has_text=re.compile(rf'^\s*{re.escape(_comuna)}\s*$')
-                ).first.click()
-                page.wait_for_timeout(200)
-
-                rellenar('[data-cy="create-customer-city"]', data.get("ciudad", ""))
-
-                # ── Guardar cliente nuevo ─────────────────────────────────────
-                save = page.locator('button[data-cy="save_btn"]')
-                save.wait_for(state="visible", timeout=30_000)
-                save.scroll_into_view_if_needed()
-                page.wait_for_timeout(600)
-                save.click()
-                page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(1_000)
-
-            elif not quote_ya_visible:
-                # Cliente existe con formulario pre-rellenado — guardar para llegar al perfil
-                save = page.locator('button[data-cy="save_btn"]')
-                save.wait_for(state="visible", timeout=30_000)
-                save.scroll_into_view_if_needed()
-                page.wait_for_timeout(600)
-                save.click()
-                page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(1_000)
-
-            # ── Cotizar (cliente nuevo o existente) ────────────────────────────
-            quote_btn = page.locator('button[data-cy="quote_btn"]')
-            quote_btn.wait_for(state="visible", timeout=15_000)
-            quote_btn.scroll_into_view_if_needed()
-            page.wait_for_timeout(500)
-            quote_btn.click()
+            # ── 6. Cotizar ─────────────────────────────────────────────────────
+            cotizar = page.get_by_role("button", name="Cotizar")
+            cotizar.wait_for(state="visible", timeout=30_000)
+            cotizar.click()
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
 
-            # ── Proyecto → primera opción disponible ──────────────────────────
+            # Proyecto (1º) -> Tipo de bien = Departamento -> N° de bien (1º)
             placeholder_select_nth(page, "Proyecto", 1)
-
-            # ── Tipo de bien → Departamento (provoca mini recarga) ─────────────
+            page.wait_for_timeout(1_500)
             placeholder_select_texto(page, "Tipo de bien", "Departamento")
-            page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(2_000)
-
-            # ── N° de bien → primera opción ────────────────────────────────────
+            page.wait_for_timeout(1_500)
             placeholder_select_nth(page, "N° de bien", 1)
+            page.wait_for_timeout(800)
 
-            # ── Agregar bien ───────────────────────────────────────────────────
-            add_btn = page.locator('button[data-cy="add_quote"]:not([disabled])')
+            # Agregar bien
+            add_btn = page.locator('button[data-cy="add_quote"]', has_text="Agregar bien").first
             add_btn.scroll_into_view_if_needed()
             add_btn.click()
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(2_000)
 
-            # ── Destino de compra → Inversión ──────────────────────────────────
-            placeholder_select_texto(page, "Destino de compra", "Inversión")
+            # Medios de información (obligatorios en la cotización)
+            placeholder_select_texto(page, "Medio de información", MEDIO_INFO)
+            placeholder_select_texto(page, "Tipo contacto", TIPO_CONTACTO)
 
-            # ── Expectativa → Muy Alta ─────────────────────────────────────────
-            placeholder_select_texto(page, "Expectativa", "Muy Alta")
-
-            # ── Medio de información → CAPITAL INTELIGENTE ────────────────────
-            placeholder_select_texto(page, "Medio de información", "CAPITAL INTELIGENTE")
-
-            # ── Tipo contacto → VISITA ─────────────────────────────────────────
-            placeholder_select_texto(page, "Tipo contacto", "VISITA")
-
-            # ── Guardar cotización ─────────────────────────────────────────────
-            save_q = page.locator('button[data-cy="save_quote"]')
-            save_q.scroll_into_view_if_needed()
-            save_q.click()
+            # ── 7. Guardar cotización = bloqueo ────────────────────────────────
+            page.locator('button[data-cy="save_quote"]').scroll_into_view_if_needed()
+            page.locator('button[data-cy="save_quote"]').click()
             page.wait_for_load_state("networkidle")
             page.wait_for_timeout(3_500)
 
@@ -466,19 +243,18 @@ def bloquear_cliente(data: dict) -> dict:
 
 
 DATOS_PRUEBA = {
-    "rut":               "12.345.678-5",
-    "nombres":           "Juan Carlos",
-    "apellidoPaterno":   "García",
-    "apellidoMaterno":   "López",
-    "fechaNacimiento":   "15-06-1985",
-    "telefonoCelular":   "912345678",
-    "correoElectronico": "juan@example.com",
-    "profesion":         "INGENIERO(A) CIVIL INDUSTRIAL",
-    "genero":            "Masculino",
+    "rut":               "19.851.181-1",
+    "nombres":           "Dahia Camila",
+    "apellidoPaterno":   "Jerez",
+    "apellidoMaterno":   "Muñoz",
+    "genero":            "Femenino",
+    "fechaNacimiento":   "05-03-1998",
     "nacionalidad":      "Chilena",
-    "direccion":         "Av. Providencia 1234",
+    "telefonoCelular":   "978375686",
+    "correoElectronico": "djerez@capitalinteligente.cl",
+    "direccion":         "Avenida Presidente Kennedy 7301",
     "region":            "Región Metropolitana de Santiago",
-    "comuna":            "Providencia",
+    "comuna":            "Las Condes",
     "ciudad":            "Santiago",
 }
 
