@@ -19,6 +19,7 @@ const SCRIPTS: Record<string, string> = {
   viva:       'Bloqueo Clientes Viva.py',
   fundamenta: 'Bloqueo Clientes Fundamenta.py',
   convet:     'Bloqueo Clientes Convet.py',
+  danacorp:   'Bloqueo Cliente Danacorp.py',
 };
 
 function runScript(scriptName: string, data: Record<string, string>): Promise<RunResult> {
