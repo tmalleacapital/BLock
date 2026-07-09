@@ -11,6 +11,7 @@ const SCRIPTS: Record<string, string> = {
   imagina:    'Bloqueo Cliente Imagina.py',
   euro:       'Bloqueo Cliente Euro.py',
   simonetti:  'Bloqueo Cliente Simonetti.py',
+  maestra:    'Bloqueo de Clientes Maestra.py',
   ecasa:      'Bloqueo Clientes Ecasa.py',
   paz:        'Bloqueo Clientes Paz.py',
   sento:      'Bloqueo Cliente Sento.py',
