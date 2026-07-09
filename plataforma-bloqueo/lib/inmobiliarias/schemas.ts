@@ -11,6 +11,7 @@ import { getFieldSchema as getImaginaSchema }        from './imagina/schema';
 import { getFieldSchema as getIngevecSchema }        from './ingevec/schema';
 import { getFieldSchema as getLarrainPrietoSchema }  from './larrain-prieto/schema';
 import { getFieldSchema as getLebenSchema }          from './leben/schema';
+import { getFieldSchema as getMaestraSchema }        from './maestra/schema';
 import { getFieldSchema as getNorteVerdeSchema }     from './norte-verde/schema';
 import { getFieldSchema as getPazSchema }            from './paz/schema';
 import { getFieldSchema as getSentoSchema }          from './sento/schema';
@@ -40,6 +41,7 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'ingevec',         name: 'Ingevec',         enabled: true, active: false },
   { key: 'larrain-prieto',  name: 'Larraín Prieto',  enabled: true, active: false },
   { key: 'leben',           name: 'Leben',           enabled: true, active: true,  emailRecipients: ['lsilva@ileben.cl', 'jfoppiano@ileben.cl'] },
+  { key: 'maestra',         name: 'Maestra',         enabled: true, active: true,  paused: true },
   { key: 'norte-verde',     name: 'Norte Verde',     enabled: true, active: false },
   { key: 'paz',             name: 'Paz',             enabled: true, active: true,  emailRecipients: ['issys.ferrer@pazcorp.cl', 'fernando.florindo@pazcorp.cl'] },
   { key: 'sento',           name: 'Sento',           enabled: true, active: true,  emailRecipients: ['mvarela@sento.cl'] },
@@ -62,6 +64,7 @@ export function getSchema(key: string): FieldSchema | undefined {
     case 'ingevec':         return getIngevecSchema();
     case 'larrain-prieto':  return getLarrainPrietoSchema();
     case 'leben':           return getLebenSchema();
+    case 'maestra':         return getMaestraSchema();
     case 'norte-verde':     return getNorteVerdeSchema();
     case 'paz':             return getPazSchema();
     case 'sento':           return getSentoSchema();

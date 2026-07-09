@@ -392,6 +392,9 @@ export default function FichaForm({
 
   const fieldMap = Object.fromEntries(schema.fields.map((f) => [f.key, f]));
 
+  // Layout de secciones: propio de la inmobiliaria si lo define, si no el default.
+  const groups = schema.groups ?? GROUPS;
+
   // Email preview data (computed when emailRecipients is set)
   const emailPreview = emailRecipients && emailRecipients.length > 0 ? (() => {
     const today = new Date().toLocaleDateString('es-CL', {
@@ -412,7 +415,7 @@ export default function FichaForm({
 
       {/* ── Formulario ── */}
       <form onSubmit={handleSubmit} className="flex-1 min-w-0 space-y-4">
-        {GROUPS.map((group) => {
+        {groups.map((group) => {
           const fields = group.keys.map((k) => fieldMap[k]).filter(Boolean).filter(isFieldVisible);
           if (fields.length === 0) return null;
           return (
@@ -780,7 +783,7 @@ export default function FichaForm({
             Progreso
           </p>
           <div className="space-y-2.5">
-            {GROUPS.map((group) => {
+            {groups.map((group) => {
               const fields = group.keys.map((k) => fieldMap[k]).filter(Boolean).filter(isFieldVisible);
               const filled = fields.filter((f) => (values[f.key] ?? '').trim() !== '').length;
               const total = fields.length;

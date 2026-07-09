@@ -20,9 +20,16 @@ export interface FieldDef {
   showWhen?: { field: string; value: string };
 }
 
+export interface FieldGroup {
+  label: string;
+  keys: string[];
+}
+
 export interface FieldSchema {
   inmobiliaria: string;
   fields: FieldDef[];
+  /** Agrupamiento de secciones propio de la inmobiliaria. Si se omite, se usa el layout por defecto. */
+  groups?: FieldGroup[];
 }
 
 export interface RunResult {

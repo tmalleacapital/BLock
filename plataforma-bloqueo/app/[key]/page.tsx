@@ -55,6 +55,10 @@ export default async function InmobiliariaPage({ params }: Props) {
     } else if (key === 'leben') {
       const { fetchLebenStock } = await import('@/lib/inmobiliarias/leben/stock');
       stockData = await fetchLebenStock();
+    } else if (key === 'maestra') {
+      const { fetchMaestraStock } = await import('@/lib/inmobiliarias/maestra/stock');
+      const raw = await fetchMaestraStock();
+      if (Object.keys(raw).length > 0) stockData = raw;
     }
   } catch {
     // ORED API no disponible — el formulario carga sin datos de stock
