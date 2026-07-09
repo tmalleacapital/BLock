@@ -166,7 +166,17 @@ def bloquear_cliente(data: dict) -> dict:
             tel.scroll_into_view_if_needed()
             tel.click()
             tel.fill(data.get("telefonoCelular", ""))
-            page.wait_for_timeout(200)
+            page.keyboard.press("Tab")   # blur -> dispara validación de teléfono
+            page.wait_for_timeout(1_500)
+
+            # Teléfono ya registrado -> modal bloqueante (taparía los campos siguientes).
+            if page.locator("text=teléfono ya existente").first.is_visible():
+                return {"status": "error",
+                        "message": "El teléfono ya está registrado para otro cliente en Simonetti."}
+            # Teléfono inválido (no es móvil chileno de 9 dígitos) -> texto inline.
+            if page.locator("text=Teléfono inválido").first.is_visible():
+                return {"status": "error",
+                        "message": "El teléfono no es un móvil chileno válido (debe tener 9 dígitos)."}
 
             _rellenar_cy(page, 'create-customer-email', data.get("correoElectronico", ""))
 
@@ -175,11 +185,6 @@ def bloquear_cliente(data: dict) -> dict:
             vs_select(page, 'create-customer-profession', PROFESION_FIJA)
             vs_select(page, 'create-customer-contact-type', TIPO_CONTACTO)
             vs_select(page, 'create-customer-media-information', MEDIO_INFO)
-
-            # Teléfono/email duplicados: el portal muestra un modal bloqueante.
-            if page.locator('text=teléfono ya existente').first.is_visible():
-                return {"status": "error",
-                        "message": "El teléfono ya está registrado para otro cliente en Simonetti."}
 
             # ── 4. Siguiente -> Paso 2 · Dirección ─────────────────────────────
             page.get_by_role("button", name="Siguiente").click()
