@@ -9,7 +9,7 @@ import sys
 import json
 from _email_comun import enviar_bloqueo
 
-DESTINATARIOS = ["vpedrerop@capitalinteligente.cl"]  # TEMPORAL: prueba — devolver a andres.lopez@fundamenta.cl
+DESTINATARIOS = ["andres.lopez@fundamenta.cl"]
 
 LABELS = {
     "rut":               "RUT",
