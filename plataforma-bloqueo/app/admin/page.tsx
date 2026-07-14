@@ -1,8 +1,9 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSession, COOKIE_NAME, isAdmin } from '@/lib/auth';
-import { getAllHistory, type BlockingStatus } from '@/lib/historyServer';
+import { getAllHistory } from '@/lib/historyServer';
 import ExportButton from './ExportButton';
+import EstadoBadge from '@/components/EstadoBadge';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,13 +12,6 @@ function fmt(iso: string) {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
-}
-
-function estadoBadge(status?: BlockingStatus): { label: string; color: string } | null {
-  if (status === 'aceptado')  return { label: 'Aceptado',  color: 'var(--success)' };
-  if (status === 'rechazado') return { label: 'Rechazado', color: 'var(--danger)' };
-  if (status === 'pendiente') return { label: 'Pendiente', color: 'var(--warning)' };
-  return null; // inmobiliarias por portal: bloqueo directo, sin estado
 }
 
 export default async function AdminPage() {
@@ -29,7 +23,8 @@ export default async function AdminPage() {
     redirect('/');
   }
 
-  const records = getAllHistory().slice().reverse(); // newest first
+  const records = getAllHistory(); // getAllHistory ya viene con el más nuevo primero
+  const pendientes = records.filter((r) => r.status === 'pendiente').length;
 
   // Stats
   const byPortal = records.reduce<Record<string, number>>((acc, r) => {
@@ -59,6 +54,14 @@ export default async function AdminPage() {
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
             {records.length} bloqueo{records.length !== 1 ? 's' : ''} registrado{records.length !== 1 ? 's' : ''}
+            {pendientes > 0 && (
+              <>
+                {' · '}
+                <span style={{ color: 'var(--warning)' }}>
+                  {pendientes} pendiente{pendientes !== 1 ? 's' : ''}
+                </span>
+              </>
+            )}
           </p>
         </div>
         <ExportButton records={records} />
@@ -179,19 +182,7 @@ export default async function AdminPage() {
                       {r.asesorEmail ?? '—'}
                     </td>
                     <td className="px-4 py-3">
-                      {(() => {
-                        const b = estadoBadge(r.status);
-                        return b ? (
-                          <span
-                            className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
-                            style={{ color: b.color, backgroundColor: `color-mix(in srgb, ${b.color} 12%, transparent)` }}
-                          >
-                            {b.label}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--muted)' }}>—</span>
-                        );
-                      })()}
+                      <EstadoBadge status={r.status} />
                     </td>
                   </tr>
                 ))}

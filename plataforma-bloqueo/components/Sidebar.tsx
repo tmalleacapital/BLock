@@ -36,6 +36,16 @@ function ShieldIcon() {
   );
 }
 
+function ListIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+      <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+    </svg>
+  );
+}
+
 function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -49,6 +59,7 @@ export default function Sidebar({ isAdmin, mobileOpen = false, onClose }: { isAd
   const pathname = usePathname();
   const activeKey = pathname.split('/')[1] ?? '';
   const isHome = pathname === '/';
+  const isMisBloqueos = pathname === '/mis-bloqueos';
   const isAdminPage = pathname === '/admin';
 
   return (
@@ -122,6 +133,32 @@ export default function Sidebar({ isAdmin, mobileOpen = false, onClose }: { isAd
                 >
                   <HomeIcon />
                   <span className="flex-1">Inicio</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/mis-bloqueos"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  onMouseEnter={(e) => {
+                    if (!isMisBloqueos) {
+                      (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'color-mix(in srgb, var(--accent) 9%, transparent)';
+                      (e.currentTarget as HTMLAnchorElement).style.color = 'var(--accent)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isMisBloqueos) {
+                      (e.currentTarget as HTMLAnchorElement).style.backgroundColor = '';
+                      (e.currentTarget as HTMLAnchorElement).style.color = 'var(--muted)';
+                    }
+                  }}
+                  style={
+                    isMisBloqueos
+                      ? { backgroundColor: 'var(--accent)', color: '#ffffff' }
+                      : { color: 'var(--muted)' }
+                  }
+                >
+                  <ListIcon />
+                  <span className="flex-1">Mis bloqueos</span>
                 </Link>
               </li>
             </ul>
