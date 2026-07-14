@@ -103,7 +103,14 @@ def construir_cuerpo(labels: dict, data: dict) -> str:
     rechazar = (data.get('__confirm_rechazar_url', '') or '').strip()
     if aceptar and rechazar:
         partes += [
-            '<p style="margin:16px 0 10px;">Por favor confírmanos tu respuesta:</p>',
+            '<p style="margin:16px 0 6px;"><strong>Tu respuesta es necesaria para procesar esta '
+            'solicitud. Por favor confírmanos con un clic:</strong></p>',
+            '<ul style="margin:6px 0 14px;padding-left:20px;color:#333333;">',
+            '<li style="margin-bottom:4px;">Presiona <strong>Aceptar bloqueo</strong> una vez que '
+            'hayan bloqueado al cliente en sus plataformas.</li>',
+            '<li>Presiona <strong>Rechazar</strong> si no es posible bloquearlo (por ejemplo, si ya '
+            'está tomado).</li>',
+            '</ul>',
             '<table cellpadding="0" cellspacing="0"><tr>',
             f'<td style="padding-right:10px;"><a href="{aceptar}" '
             'style="display:inline-block;background:#0f7b46;color:#ffffff;text-decoration:none;'
