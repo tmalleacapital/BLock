@@ -4,6 +4,7 @@ import path from 'path';
 import { cookies } from 'next/headers';
 import { enqueue } from '@/lib/queue';
 import { getSession, COOKIE_NAME } from '@/lib/auth';
+import { validarRut } from '@/lib/rut';
 import type { RunResult } from '@/lib/inmobiliarias/types';
 
 const SCRIPTS: Record<string, string> = {
@@ -72,6 +73,14 @@ export async function POST(request: NextRequest) {
 
   if (!key || !body.data) {
     return Response.json({ status: 'error', message: 'Datos inválidos.' }, { status: 400 });
+  }
+
+  // Red de seguridad: no procesar RUT inválido (módulo 11).
+  if (body.data.rut && !validarRut(body.data.rut)) {
+    return Response.json(
+      { status: 'error', message: 'El RUT no es válido (dígito verificador incorrecto).' },
+      { status: 400 },
+    );
   }
 
   const script = SCRIPTS[key];

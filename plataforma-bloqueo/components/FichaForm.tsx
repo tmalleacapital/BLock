@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { FieldDef, FieldSchema, RunResult, UnidadEntry } from '@/lib/inmobiliarias/types';
 import { savePendingJob, claimPendingJob } from '@/lib/pendingJobs';
+import { validarRut } from '@/lib/rut';
 
 interface FichaFormProps {
   inmobiliariaKey: string;
@@ -326,10 +327,16 @@ export default function FichaForm({
     .filter((f) => f.required && isFieldVisible(f))
     .every((f) => (values[f.key] ?? '').trim() !== '');
 
+  // Validación de RUT (módulo 11): si hay campo RUT con valor, debe ser válido.
+  const rutField = schema.fields.find((f) => f.type === 'rut');
+  const rutIngresado = rutField ? (values[rutField.key] ?? '').trim() : '';
+  const rutInvalido = rutIngresado !== '' && !validarRut(rutIngresado);
+
   const isProcessing = jobStatus === 'queuing' || jobStatus === 'en_cola' || jobStatus === 'procesando';
   const isSuccess = jobStatus === 'done' && result?.status === 'success';
 
   async function doSubmit(force = false) {
+    if (rutInvalido) return;
     if (!force && values.rut) {
       try {
         const check = await fetch(
@@ -472,6 +479,11 @@ export default function FichaForm({
                           {field.helpText}
                         </p>
                       )}
+                      {field.type === 'rut' && (values[field.key] ?? '').trim() !== '' && !validarRut(values[field.key] ?? '') && (
+                        <p className="mt-1 text-xs" style={{ color: 'var(--danger)' }}>
+                          RUT inválido — revisa el dígito verificador.
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -524,12 +536,12 @@ export default function FichaForm({
         <div className="flex items-center gap-4 pt-1">
           <button
             type="submit"
-            disabled={!allFilled || isProcessing || isSuccess}
+            disabled={!allFilled || rutInvalido || isProcessing || isSuccess}
             className="inline-flex items-center gap-2.5 px-8 py-3 rounded-xl text-sm font-semibold transition-all focus:outline-none focus:ring-2 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: 'var(--accent)',
               color: '#fff',
-              boxShadow: allFilled && !isProcessing && !isSuccess ? '0 4px 14px 0 color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
+              boxShadow: allFilled && !rutInvalido && !isProcessing && !isSuccess ? '0 4px 14px 0 color-mix(in srgb, var(--accent) 35%, transparent)' : 'none',
               // @ts-expect-error CSS custom property
               '--tw-ring-color': 'color-mix(in srgb, var(--accent) 40%, transparent)',
             }}
@@ -558,9 +570,15 @@ export default function FichaForm({
             )}
           </button>
 
-          {!allFilled && !isProcessing && !isSuccess && !dupWarning && (
+          {!allFilled && !rutInvalido && !isProcessing && !isSuccess && !dupWarning && (
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
               Completa todos los campos para continuar.
+            </p>
+          )}
+
+          {rutInvalido && !isProcessing && !isSuccess && (
+            <p className="text-xs" style={{ color: 'var(--danger)' }}>
+              El RUT no es válido — corrígelo para continuar.
             </p>
           )}
         </div>
