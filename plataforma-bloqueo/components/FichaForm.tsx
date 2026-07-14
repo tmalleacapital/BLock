@@ -608,11 +608,16 @@ export default function FichaForm({
               </svg>
             </div>
             <p className="text-base font-bold" style={{ color: 'var(--success)' }}>
-              Cliente bloqueado
+              {emailRecipients && emailRecipients.length > 0 ? 'Solicitud de bloqueo enviada' : 'Cliente bloqueado'}
             </p>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>
               {result?.message}
             </p>
+            {emailRecipients && emailRecipients.length > 0 && (
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+                Te avisaremos cuando la inmobiliaria confirme el bloqueo.
+              </p>
+            )}
             <button
               type="button"
               onClick={handleReset}

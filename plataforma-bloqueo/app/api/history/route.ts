@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getSession, COOKIE_NAME, sendConfirmationEmail } from '@/lib/auth';
 import { getAllHistory, addRecord, isDuplicate } from '@/lib/historyServer';
 import type { BlockingRecord } from '@/lib/historyServer';
+import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 
 async function requireAuth() {
   const cookieStore = await cookies();
@@ -26,12 +27,16 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Datos inválidos.' }, { status: 400 });
   }
 
+  // Las inmobiliarias por correo esperan confirmación → arrancan "pendiente".
+  const esPorCorreo = !!INMOBILIARIAS.find((i) => i.key === body.inmobiliariaKey)?.emailRecipients?.length;
+
   const record = addRecord({
     inmobiliariaKey: body.inmobiliariaKey,
     inmobiliariaName: body.inmobiliariaName ?? body.inmobiliariaKey,
     rut: body.rut,
     nombre: body.nombre ?? '',
     asesorEmail: body.asesorEmail,
+    status: esPorCorreo ? 'pendiente' : undefined,
   });
 
   // Enviar confirmación al asesor sin bloquear la respuesta
@@ -42,6 +47,7 @@ export async function POST(request: NextRequest) {
       nombre: record.nombre,
       inmobiliariaName: record.inmobiliariaName,
       fecha: record.fecha,
+      pendiente: esPorCorreo,
     }).catch(() => {});
   }
 

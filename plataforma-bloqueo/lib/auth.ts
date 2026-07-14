@@ -169,12 +169,21 @@ export async function sendOtpEmail(to: string, code: string): Promise<void> {
   });
 }
 
+function _filaTabla(label: string, valor: string): string {
+  return `
+    <tr style="border-bottom:1px solid #e5e7eb;">
+      <td style="padding:10px 0;color:#888;width:130px;">${label}</td>
+      <td style="padding:10px 0;color:#111;">${valor || '—'}</td>
+    </tr>`;
+}
+
 export async function sendConfirmationEmail(params: {
   to: string;
   rut: string;
   nombre: string;
   inmobiliariaName: string;
   fecha: string;
+  pendiente?: boolean;
 }): Promise<void> {
   const senderUser = process.env.GMAIL_USER;
   if (!senderUser) return;
@@ -185,33 +194,76 @@ export async function sendConfirmationEmail(params: {
     hour: '2-digit', minute: '2-digit',
   });
 
+  // Las inmobiliarias por correo esperan confirmación → no afirmamos que el
+  // cliente ya está bloqueado, solo que la solicitud fue enviada.
+  const titulo   = params.pendiente ? 'Solicitud de bloqueo enviada' : 'Bloqueo registrado';
+  const intro    = params.pendiente
+    ? 'Enviamos la solicitud de bloqueo del siguiente cliente a la inmobiliaria. Te avisaremos apenas la confirmen.'
+    : 'El siguiente cliente fue bloqueado correctamente en el portal.';
+  const subject  = params.pendiente
+    ? `[B-Lock] Solicitud de bloqueo enviada — ${params.rut} · ${params.inmobiliariaName}`
+    : `[B-Lock] Bloqueo registrado — ${params.rut} · ${params.inmobiliariaName}`;
+
   await transporter.sendMail({
     from: `"B-Lock · Capital Inteligente" <${senderUser}>`,
     to: params.to,
-    subject: `[B-Lock] Bloqueo registrado — ${params.rut} · ${params.inmobiliariaName}`,
+    subject,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
-        <h2 style="color:#1a3066;margin-bottom:8px;">Bloqueo registrado</h2>
-        <p style="color:#555;font-size:14px;margin-bottom:24px;">
-          El siguiente cliente fue bloqueado correctamente en el portal.
-        </p>
+        <h2 style="color:#1a3066;margin-bottom:8px;">${titulo}</h2>
+        <p style="color:#555;font-size:14px;margin-bottom:24px;">${intro}</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">
           <tr style="border-bottom:1px solid #e5e7eb;">
             <td style="padding:10px 0;color:#888;width:130px;">RUT</td>
             <td style="padding:10px 0;color:#111;font-weight:600;">${params.rut}</td>
           </tr>
-          <tr style="border-bottom:1px solid #e5e7eb;">
-            <td style="padding:10px 0;color:#888;">Nombre</td>
-            <td style="padding:10px 0;color:#111;">${params.nombre || '—'}</td>
-          </tr>
-          <tr style="border-bottom:1px solid #e5e7eb;">
-            <td style="padding:10px 0;color:#888;">Portal</td>
-            <td style="padding:10px 0;color:#111;">${params.inmobiliariaName}</td>
-          </tr>
+          ${_filaTabla('Nombre', params.nombre)}
+          ${_filaTabla('Inmobiliaria', params.inmobiliariaName)}
           <tr>
             <td style="padding:10px 0;color:#888;">Fecha</td>
             <td style="padding:10px 0;color:#111;">${fechaFmt}</td>
           </tr>
+        </table>
+        <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;">
+        <p style="color:#999;font-size:11px;">Capital Inteligente · B-Lock · stock@capitalinteligente.cl</p>
+      </div>
+    `,
+  });
+}
+
+export async function sendDecisionEmail(params: {
+  to: string;
+  rut: string;
+  nombre: string;
+  inmobiliariaName: string;
+  decision: 'aceptado' | 'rechazado';
+}): Promise<void> {
+  const senderUser = process.env.GMAIL_USER;
+  if (!senderUser) return;
+
+  const transporter = getTransporter();
+  const aceptado = params.decision === 'aceptado';
+  const color = aceptado ? '#0f7b46' : '#b3261e';
+  const titulo = aceptado ? 'Cliente bloqueado' : 'Solicitud rechazada';
+  const intro = aceptado
+    ? `${params.inmobiliariaName} confirmó el bloqueo del siguiente cliente.`
+    : `${params.inmobiliariaName} rechazó la solicitud de bloqueo del siguiente cliente.`;
+
+  await transporter.sendMail({
+    from: `"B-Lock · Capital Inteligente" <${senderUser}>`,
+    to: params.to,
+    subject: `[B-Lock] ${aceptado ? 'Cliente bloqueado' : 'Solicitud rechazada'} — ${params.rut} · ${params.inmobiliariaName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
+        <h2 style="color:${color};margin-bottom:8px;">${titulo}</h2>
+        <p style="color:#555;font-size:14px;margin-bottom:24px;">${intro}</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px;">
+          <tr style="border-bottom:1px solid #e5e7eb;">
+            <td style="padding:10px 0;color:#888;width:130px;">RUT</td>
+            <td style="padding:10px 0;color:#111;font-weight:600;">${params.rut}</td>
+          </tr>
+          ${_filaTabla('Nombre', params.nombre)}
+          ${_filaTabla('Inmobiliaria', params.inmobiliariaName)}
         </table>
         <hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0;">
         <p style="color:#999;font-size:11px;">Capital Inteligente · B-Lock · stock@capitalinteligente.cl</p>

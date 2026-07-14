@@ -5,6 +5,8 @@ import { cookies } from 'next/headers';
 import { enqueue } from '@/lib/queue';
 import { getSession, COOKIE_NAME } from '@/lib/auth';
 import { validarRut } from '@/lib/rut';
+import { signConfirm } from '@/lib/confirmToken';
+import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 import type { RunResult } from '@/lib/inmobiliarias/types';
 
 const SCRIPTS: Record<string, string> = {
@@ -64,7 +66,8 @@ function runScript(scriptName: string, data: Record<string, string>): Promise<Ru
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token || !getSession(token)) {
+  const session = token ? getSession(token) : null;
+  if (!session) {
     return Response.json({ status: 'error', message: 'No autenticado.' }, { status: 401 });
   }
 
@@ -81,6 +84,20 @@ export async function POST(request: NextRequest) {
       { status: 'error', message: 'El RUT no es válido (dígito verificador incorrecto).' },
       { status: 400 },
     );
+  }
+
+  // Inmobiliarias por correo: adjuntar enlaces firmados "Aceptar / Rechazar"
+  // que la inmobiliaria usará para confirmar (y que gatillan el aviso al asesor).
+  const inm = INMOBILIARIAS.find((i) => i.key === key);
+  if (inm?.emailRecipients?.length && body.data.rut) {
+    const nombre = [body.data.nombres, body.data.apellidoPaterno, body.data.apellidoMaterno]
+      .filter(Boolean).join(' ').trim();
+    const confirmToken = signConfirm({ k: key, rut: body.data.rut, nombre, asesor: session.email });
+    const base = (process.env.PUBLIC_BASE_URL || 'https://b-lock.up.railway.app').replace(/\/$/, '');
+    const url = (accion: string) =>
+      `${base}/api/confirmacion?token=${encodeURIComponent(confirmToken)}&accion=${accion}`;
+    body.data.__confirm_aceptar_url  = url('aceptar');
+    body.data.__confirm_rechazar_url = url('rechazar');
   }
 
   const script = SCRIPTS[key];

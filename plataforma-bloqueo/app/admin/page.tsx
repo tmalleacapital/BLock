@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSession, COOKIE_NAME, isAdmin } from '@/lib/auth';
-import { getAllHistory } from '@/lib/historyServer';
+import { getAllHistory, type BlockingStatus } from '@/lib/historyServer';
 import ExportButton from './ExportButton';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,13 @@ function fmt(iso: string) {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   });
+}
+
+function estadoBadge(status?: BlockingStatus): { label: string; color: string } | null {
+  if (status === 'aceptado')  return { label: 'Aceptado',  color: 'var(--success)' };
+  if (status === 'rechazado') return { label: 'Rechazado', color: 'var(--danger)' };
+  if (status === 'pendiente') return { label: 'Pendiente', color: 'var(--warning)' };
+  return null; // inmobiliarias por portal: bloqueo directo, sin estado
 }
 
 export default async function AdminPage() {
@@ -137,7 +144,7 @@ export default async function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Fecha', 'RUT', 'Nombre', 'Portal', 'Asesor'].map((h) => (
+                  {['Fecha', 'RUT', 'Nombre', 'Portal', 'Asesor', 'Estado'].map((h) => (
                     <th
                       key={h}
                       className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest"
@@ -170,6 +177,21 @@ export default async function AdminPage() {
                     </td>
                     <td className="px-4 py-3 text-xs" style={{ color: 'var(--muted)' }}>
                       {r.asesorEmail ?? '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const b = estadoBadge(r.status);
+                        return b ? (
+                          <span
+                            className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                            style={{ color: b.color, backgroundColor: `color-mix(in srgb, ${b.color} 12%, transparent)` }}
+                          >
+                            {b.label}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--muted)' }}>—</span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}

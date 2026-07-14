@@ -96,7 +96,27 @@ def construir_cuerpo(labels: dict, data: dict) -> str:
         '<p style="margin:0;">La información de la unidad se incorpora únicamente como referencia '
         'de la cotización realizada.</p>',
         '</div>',
-        '<p>Muchas gracias.</p>',
+    ]
+
+    # Botones Aceptar / Rechazar (los inyecta la ruta para inmobiliarias por correo).
+    aceptar = (data.get('__confirm_aceptar_url', '') or '').strip()
+    rechazar = (data.get('__confirm_rechazar_url', '') or '').strip()
+    if aceptar and rechazar:
+        partes += [
+            '<p style="margin:16px 0 10px;">Por favor confírmanos tu respuesta:</p>',
+            '<table cellpadding="0" cellspacing="0"><tr>',
+            f'<td style="padding-right:10px;"><a href="{aceptar}" '
+            'style="display:inline-block;background:#0f7b46;color:#ffffff;text-decoration:none;'
+            'font-weight:bold;padding:11px 24px;border-radius:6px;">Aceptar bloqueo</a></td>',
+            f'<td><a href="{rechazar}" '
+            'style="display:inline-block;background:#ffffff;color:#b3261e;text-decoration:none;'
+            'font-weight:bold;padding:11px 24px;border-radius:6px;border:1px solid #b3261e;">'
+            'Rechazar</a></td>',
+            '</tr></table>',
+        ]
+
+    partes += [
+        '<p style="margin-top:16px;">Muchas gracias.</p>',
         '</div>',
     ]
     return "".join(partes) + FIRMA_HTML

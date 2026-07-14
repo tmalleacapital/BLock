@@ -1,6 +1,8 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import path from 'path';
 
+export type BlockingStatus = 'pendiente' | 'aceptado' | 'rechazado';
+
 export interface BlockingRecord {
   id: string;
   inmobiliariaKey: string;
@@ -9,6 +11,9 @@ export interface BlockingRecord {
   nombre: string;
   fecha: string;
   asesorEmail?: string;
+  // Estado de la solicitud (solo inmobiliarias por correo, que esperan
+  // confirmación). Las de portal quedan sin estado (bloqueo directo).
+  status?: BlockingStatus;
 }
 
 type HistoryGlobal = {
@@ -87,4 +92,25 @@ export function isDuplicate(rut: string, inmobiliariaKey: string): boolean {
   return getRecords().some(
     (r) => norm(r.rut) === norm(rut) && r.inmobiliariaKey === inmobiliariaKey,
   );
+}
+
+/**
+ * Actualiza el estado de la solicitud más reciente que coincida con
+ * (rut, inmobiliariaKey). Devuelve el registro actualizado, o undefined si no
+ * existe. Los registros están ordenados con el más nuevo primero (unshift).
+ */
+export function setStatus(
+  rut: string,
+  inmobiliariaKey: string,
+  status: BlockingStatus,
+): BlockingRecord | undefined {
+  const norm = (r: string) => r.replace(/[.\-]/g, '').toLowerCase();
+  const records = getRecords();
+  const record = records.find(
+    (r) => norm(r.rut) === norm(rut) && r.inmobiliariaKey === inmobiliariaKey,
+  );
+  if (!record) return undefined;
+  record.status = status;
+  writeToDisk(records);
+  return record;
 }
