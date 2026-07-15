@@ -40,9 +40,11 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-URL_LOGIN   = "https://app.cliperty.com/login"
-URL_QUOTER  = "https://app.cliperty.com/projects/5/quoter"  # Aires de Marañón
-HEADLESS    = os.environ.get('HEADLESS', '1') != '0'
+URL_LOGIN    = "https://app.cliperty.com/login"
+URL_PROJECTS = "https://app.cliperty.com/projects"
+URL_QUOTER   = "https://app.cliperty.com/projects/5/quoter"  # Aires de Marañón (id 5)
+PROYECTO     = "Aires de Marañon"  # texto del <h1> de la tarjeta (sin tilde en la "o")
+HEADLESS     = os.environ.get('HEADLESS', '1') != '0'
 
 # Valores fijos del bloqueo (Datos Cotización) — definición comercial de CI.
 DESTINO_COMPRA    = "Inversión"
@@ -80,9 +82,18 @@ def bloquear_cliente(data: dict) -> dict:
             page.fill("#input-usuario", usuario)
             page.fill("#input-password", clave)
             page.locator(".btn_login").click()
-            page.wait_for_timeout(3_500)
+            page.wait_for_timeout(4_000)  # dar tiempo al login (reCAPTCHA invisible)
 
-            # ── 2. Cotizador del proyecto fijo (Aires de Marañón) ──────────────
+            # ── 2. Entrar al proyecto (fija contexto) y luego al cotizador ─────
+            # IMPORTANTE: entrar directo a /quoter sin seleccionar el proyecto
+            # deja el cotizador sin cargar. Primero se clickea la tarjeta.
+            page.goto(URL_PROJECTS, wait_until="domcontentloaded")
+            proyecto = page.locator("h1").filter(has_text=PROYECTO).first
+            proyecto.wait_for(state="visible", timeout=30_000)
+            proyecto.click()
+            page.wait_for_url("**/projects/5/**", timeout=30_000)
+            page.wait_for_timeout(1_500)
+
             page.goto(URL_QUOTER, wait_until="domcontentloaded")
             page.wait_for_timeout(2_500)
 
