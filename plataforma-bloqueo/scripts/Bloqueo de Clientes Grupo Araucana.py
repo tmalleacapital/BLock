@@ -116,13 +116,23 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_timeout(1_500)
 
             # ── 5. Cliente: SOLO obligatorios (RUT primero) ────────────────────
+            modal = page.locator("cliperty-views-create-customer")
             rut_loc = page.locator("#input-rut")
             rut_loc.wait_for(state="visible", timeout=30_000)
             rut_loc.click()
             rut_loc.fill(data.get("rut", ""))
-            # La búsqueda del RUT limpia los demás campos: esperar a que termine
-            # ANTES de rellenar el resto, si no se pierden.
-            page.wait_for_timeout(2_500)
+            # La búsqueda del RUT autolimpia los campos y autollena "Persona Natural"
+            # en #input-typeRegisteredName. Hay que esperar a que TERMINE antes de
+            # rellenar el resto, si no la búsqueda borra lo recién escrito.
+            try:
+                page.wait_for_function(
+                    "() => { const e = document.getElementById('input-typeRegisteredName');"
+                    " return e && (e.value || '').trim().length > 0; }",
+                    timeout=15_000,
+                )
+            except Exception:
+                page.wait_for_timeout(3_000)
+            page.wait_for_timeout(800)
 
             page.fill("#input-name", data.get("nombres", ""))
             apellidos = f"{data.get('apellidoPaterno', '')} {data.get('apellidoMaterno', '')}".strip()
@@ -131,10 +141,10 @@ def bloquear_cliente(data: dict) -> dict:
             page.fill("#input-email", data.get("correoElectronico", ""))
             page.wait_for_timeout(400)
 
-            # Guardar cliente (botón del modal)
-            page.locator("button.btn_save").filter(has_text="Guardar").last.click()
-            # Esperar a que el modal del cliente se cierre
-            page.wait_for_selector("text=Añadir Nuevo Cliente", state="detached", timeout=20_000)
+            # Guardar cliente — el botón DENTRO del modal (hay otro "Guardar" en la
+            # página de la cotización que queda detrás).
+            modal.locator("button.btn_save").filter(has_text="Guardar").first.click()
+            modal.wait_for(state="detached", timeout=20_000)
             page.wait_for_timeout(1_200)
 
             # ── 6. Datos Cotización (obligatorios) ─────────────────────────────
@@ -142,8 +152,10 @@ def bloquear_cliente(data: dict) -> dict:
             _select_por_label(page, "#select-origin",  MEDIO_ORIGEN)
             _select_por_label(page, "#select-source",  MEDIO_REALIZACION)
 
-            # ── 7. Guardar cotización ──────────────────────────────────────────
-            page.locator("button.btn_save").filter(has_text="Guardar").last.click()
+            # ── 7. Guardar cotización (botón de la página, no del modal) ───────
+            page.locator("cliperty-views-create-quotation button.btn_save").filter(
+                has_text="Guardar"
+            ).first.click()
             page.wait_for_timeout(2_000)
 
             # ── 8. Encuesta Cliente -> Saltar ──────────────────────────────────
