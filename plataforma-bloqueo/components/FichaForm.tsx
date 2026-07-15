@@ -25,7 +25,7 @@ interface ApiJobState {
 
 const GROUPS: { label: string; keys: string[] }[] = [
   { label: 'Identidad', keys: ['rut', 'apellidoPaterno', 'apellidoMaterno', 'nombres', 'sexo', 'genero'] },
-  { label: 'Perfil',    keys: ['fechaNacimiento', 'estadoCivil', 'nacionalidad', 'profesion'] },
+  { label: 'Perfil',    keys: ['fechaNacimiento', 'edad', 'estadoCivil', 'nacionalidad', 'profesion'] },
   { label: 'Conviviente civil', keys: ['rutConyuge', 'nombreConyuge', 'apellidoConyuge'] },
   { label: 'Dirección', keys: ['calle', 'numero', 'direccion', 'region', 'comuna', 'ciudad'] },
   { label: 'Contacto',  keys: ['telefonoCelular', 'correoElectronico'] },
