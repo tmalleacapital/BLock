@@ -29,7 +29,7 @@ export interface InmobiliariaEntry {
 }
 
 export const INMOBILIARIAS: InmobiliariaEntry[] = [
-  { key: 'araucana',        name: 'Grupo Araucana',  enabled: true, active: true, paused: true },
+  { key: 'araucana',        name: 'Grupo Araucana',  enabled: true, active: true  },
   { key: 'convet',          name: 'Convet',          enabled: true, active: true,  emailRecipients: ['vcorrales@convet.cl'] },
   { key: 'danacorp',        name: 'Danacorp',        enabled: true, active: true,  emailRecipients: ['sdonoso@danacorp.cl'] },
   { key: 'deisa',           name: 'Deisa',           enabled: true, active: true,  emailRecipients: ['dsanchez@deisa.cl'] },
