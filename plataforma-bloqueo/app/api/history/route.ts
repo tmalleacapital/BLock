@@ -11,10 +11,18 @@ async function requireAuth() {
   return token ? getSession(token) : null;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await requireAuth();
   if (!session) return Response.json({ error: 'No autenticado.' }, { status: 401 });
-  return Response.json(getAllHistory());
+
+  const all = getAllHistory();
+  // ?mine=1 → solo los bloqueos del asesor de la sesión (vista "Mis bloqueos").
+  const mine = new URL(request.url).searchParams.get('mine') === '1';
+  if (mine) {
+    const email = session.email.toLowerCase();
+    return Response.json(all.filter((r) => (r.asesorEmail ?? '').toLowerCase() === email));
+  }
+  return Response.json(all);
 }
 
 export async function POST(request: NextRequest) {
