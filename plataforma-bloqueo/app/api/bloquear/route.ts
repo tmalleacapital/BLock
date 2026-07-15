@@ -9,24 +9,6 @@ import { signConfirm } from '@/lib/confirmToken';
 import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 import type { RunResult } from '@/lib/inmobiliarias/types';
 
-const SCRIPTS: Record<string, string> = {
-  araucana:   'Bloqueo de Clientes Grupo Araucana.py',
-  imagina:    'Bloqueo Cliente Imagina.py',
-  euro:       'Bloqueo Cliente Euro.py',
-  simonetti:  'Bloqueo Cliente Simonetti.py',
-  maestra:    'Bloqueo de Clientes Maestra.py',
-  ecasa:      'Bloqueo Clientes Ecasa.py',
-  paz:        'Bloqueo Clientes Paz.py',
-  sento:      'Bloqueo Cliente Sento.py',
-  fai:        'Bloqueo Clientes Fai.py',
-  viva:       'Bloqueo Clientes Viva.py',
-  fundamenta: 'Bloqueo Clientes Fundamenta.py',
-  convet:     'Bloqueo Clientes Convet.py',
-  danacorp:   'Bloqueo Cliente Danacorp.py',
-  deisa:      'Bloqueo Cliente Deisa.py',
-  leben:      'Bloqueo Cliente Leben.py',
-};
-
 function runScript(scriptName: string, data: Record<string, string>): Promise<RunResult> {
   return new Promise((resolve) => {
     const scriptPath = path.resolve(process.cwd(), 'scripts', scriptName);
@@ -86,9 +68,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const inm = INMOBILIARIAS.find((i) => i.key === key);
+
   // Inmobiliarias por correo: adjuntar enlaces firmados "Aceptar / Rechazar"
   // que la inmobiliaria usará para confirmar (y que gatillan el aviso al asesor).
-  const inm = INMOBILIARIAS.find((i) => i.key === key);
   if (inm?.emailRecipients?.length && body.data.rut) {
     const nombre = [body.data.nombres, body.data.apellidoPaterno, body.data.apellidoMaterno]
       .filter(Boolean).join(' ').trim();
@@ -100,7 +83,7 @@ export async function POST(request: NextRequest) {
     body.data.__confirm_rechazar_url = url('rechazar');
   }
 
-  const script = SCRIPTS[key];
+  const script = inm?.script;
   const fn: () => Promise<RunResult> = script
     ? () => runScript(script, body.data!)
     : async () => ({ status: 'pending', message: `Automatización de ${key} aún no disponible.` });

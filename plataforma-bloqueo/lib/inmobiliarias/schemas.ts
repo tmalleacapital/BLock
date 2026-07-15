@@ -26,28 +26,31 @@ export interface InmobiliariaEntry {
   active: boolean;
   paused?: boolean;
   emailRecipients?: string[];
+  /** Nombre del script Python en /scripts que ejecuta el bloqueo. Si falta, la
+   *  automatización aún no está disponible (la ruta responde "pending"). */
+  script?: string;
 }
 
 export const INMOBILIARIAS: InmobiliariaEntry[] = [
-  { key: 'araucana',        name: 'Grupo Araucana',  enabled: true, active: true  },
-  { key: 'convet',          name: 'Convet',          enabled: true, active: true,  emailRecipients: ['vcorrales@convet.cl'] },
-  { key: 'danacorp',        name: 'Danacorp',        enabled: true, active: true,  emailRecipients: ['sdonoso@danacorp.cl'] },
-  { key: 'deisa',           name: 'Deisa',           enabled: true, active: true,  emailRecipients: ['dsanchez@deisa.cl'] },
-  { key: 'ecasa',           name: 'Ecasa',           enabled: true, active: true,  emailRecipients: ['canalinversiones@ecasa.cl'] },
-  { key: 'euro',            name: 'Euro',            enabled: true, active: true  },
-  { key: 'fai',             name: 'FAI',             enabled: true, active: true,  emailRecipients: ['Francisco.flores@flesan.cl'] },
-  { key: 'fundamenta',      name: 'Fundamenta',      enabled: true, active: true,  emailRecipients: ['andres.lopez@fundamenta.cl'] },
-  { key: 'imagina',         name: 'Imagina',         enabled: true, active: true  },
+  { key: 'araucana',        name: 'Grupo Araucana',  enabled: true, active: true,  script: 'Bloqueo de Clientes Grupo Araucana.py' },
+  { key: 'convet',          name: 'Convet',          enabled: true, active: true,  emailRecipients: ['vcorrales@convet.cl'], script: 'Bloqueo Clientes Convet.py' },
+  { key: 'danacorp',        name: 'Danacorp',        enabled: true, active: true,  emailRecipients: ['sdonoso@danacorp.cl'], script: 'Bloqueo Cliente Danacorp.py' },
+  { key: 'deisa',           name: 'Deisa',           enabled: true, active: true,  emailRecipients: ['dsanchez@deisa.cl'], script: 'Bloqueo Cliente Deisa.py' },
+  { key: 'ecasa',           name: 'Ecasa',           enabled: true, active: true,  emailRecipients: ['canalinversiones@ecasa.cl'], script: 'Bloqueo Clientes Ecasa.py' },
+  { key: 'euro',            name: 'Euro',            enabled: true, active: true,  script: 'Bloqueo Cliente Euro.py' },
+  { key: 'fai',             name: 'FAI',             enabled: true, active: true,  emailRecipients: ['Francisco.flores@flesan.cl'], script: 'Bloqueo Clientes Fai.py' },
+  { key: 'fundamenta',      name: 'Fundamenta',      enabled: true, active: true,  emailRecipients: ['andres.lopez@fundamenta.cl'], script: 'Bloqueo Clientes Fundamenta.py' },
+  { key: 'imagina',         name: 'Imagina',         enabled: true, active: true,  script: 'Bloqueo Cliente Imagina.py' },
   { key: 'ingevec',         name: 'Ingevec',         enabled: true, active: false },
   { key: 'larrain-prieto',  name: 'Larraín Prieto',  enabled: true, active: false },
-  { key: 'leben',           name: 'Leben',           enabled: true, active: true,  emailRecipients: ['lsilva@ileben.cl', 'jfoppiano@ileben.cl'] },
-  { key: 'maestra',         name: 'Maestra',         enabled: true, active: true  },
+  { key: 'leben',           name: 'Leben',           enabled: true, active: true,  emailRecipients: ['lsilva@ileben.cl', 'jfoppiano@ileben.cl'], script: 'Bloqueo Cliente Leben.py' },
+  { key: 'maestra',         name: 'Maestra',         enabled: true, active: true,  script: 'Bloqueo de Clientes Maestra.py' },
   { key: 'norte-verde',     name: 'Norte Verde',     enabled: true, active: false },
-  { key: 'paz',             name: 'Paz',             enabled: true, active: true,  emailRecipients: ['issys.ferrer@pazcorp.cl', 'fernando.florindo@pazcorp.cl'] },
-  { key: 'sento',           name: 'Sento',           enabled: true, active: true  },
-  { key: 'simonetti',       name: 'Simonetti',       enabled: true, active: true  },
+  { key: 'paz',             name: 'Paz',             enabled: true, active: true,  emailRecipients: ['issys.ferrer@pazcorp.cl', 'fernando.florindo@pazcorp.cl'], script: 'Bloqueo Clientes Paz.py' },
+  { key: 'sento',           name: 'Sento',           enabled: true, active: true,  script: 'Bloqueo Cliente Sento.py' },
+  { key: 'simonetti',       name: 'Simonetti',       enabled: true, active: true,  script: 'Bloqueo Cliente Simonetti.py' },
   { key: 'vicuna-mackenna', name: 'Vicuña Mackenna', enabled: true, active: false },
-  { key: 'viva',            name: 'Viva',            enabled: true, active: true,  emailRecipients: ['ventas@iviva.cl'] },
+  { key: 'viva',            name: 'Viva',            enabled: true, active: true,  emailRecipients: ['ventas@iviva.cl'], script: 'Bloqueo Clientes Viva.py' },
 ];
 
 export function getSchema(key: string): FieldSchema | undefined {
