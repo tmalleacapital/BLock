@@ -193,11 +193,17 @@ def bloquear_cliente(data: dict) -> dict:
             page.fill("#nat_email",        data.get("correoElectronico", ""))
 
             # ── 4. Continuar hasta el paso 4 "Otros" ───────────────────────────
+            # OJO: el botón "Finalizar" (#test) está visible en TODOS los pasos, así
+            # que no sirve para detectar el paso 4. El marcador real es el campo de
+            # la leyenda (#nat_descripcion_adicional); además en el paso 4 el botón
+            # "Continuar" (#next) desaparece.
             for _ in range(6):
-                if page.locator("#test").is_visible():   # #test = botón Finalizar (paso 4)
+                if page.locator("#nat_descripcion_adicional").is_visible():
+                    break
+                if not page.locator("#next").is_visible():
                     break
                 page.locator("#next").click()            # #next = botón Continuar
-                page.wait_for_timeout(700)
+                page.wait_for_timeout(800)
 
             # ── 5. Paso 4 · leyenda + Finalizar ────────────────────────────────
             page.wait_for_selector("#nat_descripcion_adicional", state="visible", timeout=15_000)
