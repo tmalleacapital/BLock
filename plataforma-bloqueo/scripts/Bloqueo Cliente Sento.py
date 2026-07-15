@@ -60,7 +60,8 @@ BASE        = "https://www.comercialinmobiliarias.cl/gci/sento/gi"
 URL_LOGIN   = f"{BASE}/usuarios/agenda.php"
 URL_COTIZAR = f"{BASE}/usuarios/ventas_proyecto.php?next=cotizar"
 
-DESTINATARIOS = ["centroexperiencia@sento.cl"]
+# TODO: revertir tras la prueba -> ["centroexperiencia@sento.cl"]
+DESTINATARIOS = ["vpedrerop@capitalinteligente.cl"]
 
 # Valores fijos del bloqueo (definición comercial de Capital Inteligente).
 TIPO_CLIENTE_INVERSIONISTA = "1"        # cat_tpcliente
