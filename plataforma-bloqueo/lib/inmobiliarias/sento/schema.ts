@@ -26,29 +26,23 @@ export function getFieldSchema(): FieldSchema {
   return {
     inmobiliaria: 'sento',
     fields: [
-      { key: 'rut',               label: 'RUT',                type: 'rut',   required: true  },
-      { key: 'nombres',           label: 'Nombres',            type: 'text',  required: true  },
-      { key: 'apellidoPaterno',   label: 'Apellido paterno',   type: 'text',  required: true  },
-      { key: 'apellidoMaterno',   label: 'Apellido materno',   type: 'text',  required: false },
+      { key: 'rut',             label: 'RUT',              type: 'rut',  required: true },
+      { key: 'nombres',         label: 'Nombres',          type: 'text', required: true },
+      { key: 'apellidoPaterno', label: 'Apellido paterno', type: 'text', required: true },
       {
-        key: 'genero',
-        label: 'Género',
+        key: 'edad',
+        label: 'Edad',
         type: 'select',
         required: true,
         options: [
-          { value: 'Masculino', label: 'Masculino' },
-          { value: 'Femenino',  label: 'Femenino'  },
+          { value: '1-25',  label: '18 a 25 años'  },
+          { value: '26-35', label: '26 a 35 años'  },
+          { value: '36-45', label: '36 a 45 años'  },
+          { value: '46-55', label: '46 a 55 años'  },
+          { value: '56-65', label: '56 a 65 años'  },
+          { value: '66-99', label: '66 años o más' },
         ],
       },
-      {
-        key: 'fechaNacimiento',
-        label: 'Fecha de nacimiento',
-        type: 'text',
-        required: true,
-        helpText: 'Formato DD-MM-AAAA',
-      },
-      { key: 'telefonoCelular',   label: 'Teléfono celular',   type: 'phone', required: true  },
-      { key: 'correoElectronico', label: 'Correo electrónico', type: 'email', required: true  },
       {
         key: 'comuna',
         label: 'Comuna',
@@ -56,6 +50,8 @@ export function getFieldSchema(): FieldSchema {
         required: true,
         options: COMUNAS.map((c) => ({ value: c, label: c })),
       },
+      { key: 'telefonoCelular',   label: 'Teléfono celular',   type: 'phone', required: true },
+      { key: 'correoElectronico', label: 'Correo electrónico', type: 'email', required: true },
     ],
   };
 }

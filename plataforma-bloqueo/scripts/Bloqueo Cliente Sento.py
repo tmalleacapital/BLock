@@ -12,9 +12,9 @@ Flujo:
   1. Login (SENTO_USER = rut-dv, SENTO_PASS).
   2. Sala de Ventas -> Inicio Cotización. Proyecto FIJO = ZA_NUEVA CATEDRAL.
      Se ingresa el RUT y se pulsa "Crear Cliente" -> abre wizard de 4 pasos.
-  3. Paso 1 "Información Personal": nombre, apellidos, fecha nac., tipo de cliente
-     (Inversionista, fijo), edad (derivada de la fecha nac.), género, comuna
-     (autocompleta región/provincia), teléfono celular, email.
+  3. Paso 1 "Información Personal" (solo obligatorios): nombres, apellido paterno,
+     tipo de cliente (Inversionista, fijo), edad, comuna (autocompleta
+     región/provincia), teléfono celular, email.
   4. Pasos 2 y 3: sin obligatorios -> Continuar.
   5. Paso 4 "Otros": leyenda "CAPITAL INTELIGENTE dd-mm-aaaa" -> Finalizar.
   6. "Nueva Visita": medio de llegada = REFERIDO TERCEROS -> Guardar y Seguir.
@@ -35,7 +35,6 @@ import os
 import json
 import smtplib
 import datetime
-import unicodedata
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
@@ -79,34 +78,6 @@ def _rut_partes(rut: str):
     else:
         num, dv = limpio[:-1], limpio[-1:]
     return num, dv
-
-
-def _norm(s: str) -> str:
-    """Normaliza (sin tildes, mayúsculas) para comparar comunas."""
-    s = unicodedata.normalize("NFD", s or "")
-    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
-    return s.upper().strip()
-
-
-def _edad_rango(fecha_nac: str) -> str:
-    """Deriva el rango de edad (value del <select nat_edad>) desde DD-MM-AAAA."""
-    try:
-        d, m, a = [int(x) for x in fecha_nac.replace("/", "-").split("-")]
-        hoy = datetime.date.today()
-        edad = hoy.year - a - ((hoy.month, hoy.day) < (m, d))
-    except Exception:
-        return "36-45"  # fallback razonable si la fecha viene rara
-    if edad <= 25:
-        return "1-25"
-    if edad <= 35:
-        return "26-35"
-    if edad <= 45:
-        return "36-45"
-    if edad <= 55:
-        return "46-55"
-    if edad <= 65:
-        return "56-65"
-    return "66-99"
 
 
 def _telefono(valor: str) -> str:
@@ -204,18 +175,12 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_selector("#nat_nombre", state="visible", timeout=30_000)
             page.wait_for_timeout(500)
 
-            # ── 3. Paso 1 · Información Personal ────────────────────────────────
+            # ── 3. Paso 1 · Información Personal (solo campos obligatorios) ─────
             page.fill("#nat_nombre",    data.get("nombres", ""))
             page.fill("#nat_apellido1", data.get("apellidoPaterno", ""))
-            page.fill("#nat_apellido2", data.get("apellidoMaterno", ""))
-            page.fill("#nat_fecha_nacimiento", data.get("fechaNacimiento", ""))
 
             page.select_option("#cat_tpcliente", TIPO_CLIENTE_INVERSIONISTA)
-            page.select_option("#nat_edad", _edad_rango(data.get("fechaNacimiento", "")))
-
-            genero = (data.get("genero", "") or "").strip().upper()
-            if genero in ("MASCULINO", "FEMENINO"):
-                page.select_option("#nat_sexo", genero)
+            page.select_option("#nat_edad", data.get("edad", ""))
 
             comuna_val = _comuna_value(page, data.get("comuna", ""))
             if not comuna_val:
@@ -326,12 +291,10 @@ DATOS_PRUEBA = {
     "rut":               "16.936.472-9",
     "nombres":           "Prueba",
     "apellidoPaterno":   "Bloqueo",
-    "apellidoMaterno":   "Sento",
-    "genero":            "Masculino",
-    "fechaNacimiento":   "05-08-1988",
+    "edad":              "36-45",
+    "comuna":            "Santiago",
     "telefonoCelular":   "+56990000000",
     "correoElectronico": "prueba@capitalinteligente.cl",
-    "comuna":            "Santiago",
 }
 
 if __name__ == "__main__":
