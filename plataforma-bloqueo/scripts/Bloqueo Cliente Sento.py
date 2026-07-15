@@ -39,21 +39,11 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 
-from playwright.sync_api import sync_playwright, Page
+from playwright.sync_api import Page
 
+from _browser_comun import load_dotenv, abrir_navegador, set_input
 
-def _load_dotenv() -> None:
-    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
-    if not os.path.exists(env_file):
-        return
-    with open(env_file, encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                k, v = line.split('=', 1)
-                os.environ.setdefault(k.strip(), v.strip())
-
-_load_dotenv()
+load_dotenv()
 
 BASE        = "https://www.comercialinmobiliarias.cl/gci/sento/gi"
 URL_LOGIN   = f"{BASE}/usuarios/agenda.php"
@@ -91,23 +81,6 @@ def _telefono(valor: str) -> str:
     return t
 
 
-def _set(page: Page, campo_id: str, valor: str) -> bool:
-    """Fija el valor de un input/textarea/select por id y dispara los eventos
-    del framework (input/change/blur)."""
-    return page.evaluate(
-        """({id, val}) => {
-            const el = document.getElementById(id);
-            if (!el) return false;
-            el.value = val;
-            el.dispatchEvent(new Event('input',  {bubbles:true}));
-            el.dispatchEvent(new Event('change', {bubbles:true}));
-            el.dispatchEvent(new Event('blur',   {bubbles:true}));
-            return true;
-        }""",
-        {"id": campo_id, "val": valor},
-    )
-
-
 def _comuna_value(page: Page, comuna: str) -> str:
     """Busca en el <select nat_dir_comuna> el value cuya etiqueta coincide
     (sin tildes/mayúsculas) con la comuna del formulario."""
@@ -135,13 +108,8 @@ def bloquear_cliente(data: dict) -> dict:
     fecha_hoy           = datetime.date.today().strftime("%d-%m-%Y")
     leyenda             = f"CAPITAL INTELIGENTE {fecha_hoy}"
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, slow_mo=150)
-        context = browser.new_context(viewport={"width": 1440, "height": 960}, locale="es-CL")
-        page = context.new_page()
-        page.on("dialog", lambda d: d.accept())  # auto-acepta alerts nativos
-
-        try:
+    try:
+        with abrir_navegador(headless=True, slow_mo=150, width=1440, height=960) as page:
             # ── 1. Login ───────────────────────────────────────────────────────
             page.goto(URL_LOGIN, wait_until="domcontentloaded")
             page.get_by_placeholder("Rut").fill(login_num)
@@ -166,8 +134,8 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_selector("#nat_rut_cotizacion", state="visible", timeout=30_000)
             page.wait_for_timeout(500)
 
-            _set(page, "nat_rut_cotizacion", cli_num)
-            _set(page, "nat_dv_rut_cotizacion", cli_dv)
+            set_input(page, "nat_rut_cotizacion", cli_num)
+            set_input(page, "nat_dv_rut_cotizacion", cli_dv)
             page.get_by_role("button", name="Crear Cliente").click()
 
             # Se abre el wizard "Creación de Cliente (Natural)".
@@ -185,7 +153,7 @@ def bloquear_cliente(data: dict) -> dict:
             if not comuna_val:
                 return {"status": "error",
                         "message": f"No se encontró la comuna '{data.get('comuna', '')}' en el portal de Sento."}
-            _set(page, "nat_dir_comuna", comuna_val)   # autocompleta región/provincia
+            set_input(page, "nat_dir_comuna", comuna_val)   # autocompleta región/provincia
             page.wait_for_timeout(1_200)
 
             page.fill("#nat_fono_celular", _telefono(data.get("telefonoCelular", "")))
@@ -222,7 +190,7 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_timeout(500)
             page.select_option("#id_expectativa",   EXPECTATIVA_MUY_ALTA)
             page.select_option("#id_tipo_contacto", TIPO_CONTACTO_MAILS)
-            _set(page, "comentario", COMENTARIO_EVALUACION)
+            set_input(page, "comentario", COMENTARIO_EVALUACION)
             page.locator("#btn_guardar_evaluacion").click()
             page.wait_for_timeout(2_500)
 
@@ -231,10 +199,8 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_timeout(800)
             png_bytes = page.locator("#panel_tab_cliente").screenshot()
 
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-        finally:
-            browser.close()
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
     # ── 9. Enviar comprobante por correo ───────────────────────────────────────
     return _enviar_comprobante(data, png_bytes, fecha_hoy)

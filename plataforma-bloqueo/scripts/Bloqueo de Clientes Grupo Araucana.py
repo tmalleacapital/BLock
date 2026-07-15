@@ -24,21 +24,11 @@ Ver navegador:   HEADLESS=0 python "Bloqueo de Clientes Grupo Araucana.py"
 import sys
 import json
 import os
-from playwright.sync_api import sync_playwright, Page
+from playwright.sync_api import Page
 
+from _browser_comun import load_dotenv, abrir_navegador, set_input
 
-def _load_dotenv() -> None:
-    env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
-    if not os.path.exists(env_file):
-        return
-    with open(env_file, encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                k, v = line.split('=', 1)
-                os.environ.setdefault(k.strip(), v.strip())
-
-_load_dotenv()
+load_dotenv()
 
 URL_LOGIN    = "https://app.cliperty.com/login"
 URL_PROJECTS = "https://app.cliperty.com/projects"
@@ -58,25 +48,6 @@ MEDIO_ORIGEN      = "Capital Inteligente"
 MEDIO_REALIZACION = "Online"
 
 
-def _set_input(page: Page, campo_id: str, valor: str) -> None:
-    """Rellena un input por id disparando input/change/BLUR. El blur es clave:
-    el campo de teléfono (intl-tel-input) y el RUT solo validan / disparan su
-    búsqueda al perder el foco; page.fill() no dispara blur y el modal no guarda."""
-    page.evaluate(
-        """({id, val}) => {
-            const el = document.getElementById(id);
-            if (!el) return false;
-            el.focus();
-            el.value = val;
-            el.dispatchEvent(new Event('input',  {bubbles:true}));
-            el.dispatchEvent(new Event('change', {bubbles:true}));
-            el.dispatchEvent(new Event('blur',   {bubbles:true}));
-            return true;
-        }""",
-        {"id": campo_id, "val": valor},
-    )
-
-
 def _select_por_label(page: Page, selector: str, label: str) -> None:
     """Selecciona por texto exacto en un <select> Angular y dispara change."""
     loc = page.locator(selector)
@@ -94,13 +65,8 @@ def bloquear_cliente(data: dict) -> dict:
         return {"status": "error",
                 "message": "Faltan credenciales: define ARAUCANA_USER y ARAUCANA_PASS."}
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=HEADLESS, slow_mo=200)
-        context = browser.new_context(viewport={"width": 1920, "height": 1080}, locale='es-CL')
-        page = context.new_page()
-        page.on("dialog", lambda d: d.accept())  # por si aparece algún alert nativo
-
-        try:
+    try:
+        with abrir_navegador(headless=HEADLESS, slow_mo=200, width=1920, height=1080) as page:
             # ── 1. Login ───────────────────────────────────────────────────────
             page.goto(URL_LOGIN, wait_until="domcontentloaded")
             page.wait_for_selector("#input-usuario", state="visible", timeout=30_000)
@@ -148,7 +114,7 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_selector("#input-rut", state="visible", timeout=30_000)
             # RUT primero (con blur -> dispara la búsqueda, que autollena
             # "Persona Natural" en #input-typeRegisteredName y limpia el resto).
-            _set_input(page, "input-rut", data.get("rut", ""))
+            set_input(page, "input-rut", data.get("rut", ""))
             try:
                 page.wait_for_function(
                     "() => { const e = document.getElementById('input-typeRegisteredName');"
@@ -160,10 +126,10 @@ def bloquear_cliente(data: dict) -> dict:
             page.wait_for_timeout(800)
 
             apellidos = f"{data.get('apellidoPaterno', '')} {data.get('apellidoMaterno', '')}".strip()
-            _set_input(page, "input-name",      data.get("nombres", ""))
-            _set_input(page, "input-lastName",  apellidos)
-            _set_input(page, "input-cellPhone", data.get("telefonoCelular", ""))
-            _set_input(page, "input-email",     data.get("correoElectronico", ""))
+            set_input(page, "input-name",      data.get("nombres", ""))
+            set_input(page, "input-lastName",  apellidos)
+            set_input(page, "input-cellPhone", data.get("telefonoCelular", ""))
+            set_input(page, "input-email",     data.get("correoElectronico", ""))
             page.wait_for_timeout(400)
 
             # Guardar cliente — el botón DENTRO del modal (hay otro "Guardar" en la
@@ -203,11 +169,8 @@ def bloquear_cliente(data: dict) -> dict:
                 "message": f"Cliente bloqueado en Cliperty (Grupo Araucana – {nombre_proyecto}): cotización generada.",
             }
 
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-        finally:
-            browser.close()
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 DATOS_PRUEBA = {
