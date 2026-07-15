@@ -19,14 +19,17 @@ const COMUNAS = [
   'Punta Arenas','Laguna Blanca','Río Verde','San Gregorio','Cabo de Hornos','Antártica','Porvenir','Primavera','Timaukel','Puerto Natales','Torres del Paine',
 ].sort();
 
+// Sento pasó a bloqueo por plataforma (portal GCI / PlanOK). El proyecto es fijo
+// (ZA_NUEVA CATEDRAL) porque la cuenta de Capital Inteligente solo opera ese, así
+// que el asesor no elige proyecto: basta con los datos personales que exige el alta.
 export function getFieldSchema(): FieldSchema {
   return {
     inmobiliaria: 'sento',
     fields: [
-      { key: 'rut',               label: 'RUT',                 type: 'rut',   required: true },
-      { key: 'apellidoPaterno',   label: 'Apellido paterno',    type: 'text',  required: true },
-      { key: 'apellidoMaterno',   label: 'Apellido materno',    type: 'text',  required: true },
-      { key: 'nombres',           label: 'Nombres',             type: 'text',  required: true },
+      { key: 'rut',               label: 'RUT',                type: 'rut',   required: true  },
+      { key: 'nombres',           label: 'Nombres',            type: 'text',  required: true  },
+      { key: 'apellidoPaterno',   label: 'Apellido paterno',   type: 'text',  required: true  },
+      { key: 'apellidoMaterno',   label: 'Apellido materno',   type: 'text',  required: false },
       {
         key: 'genero',
         label: 'Género',
@@ -44,48 +47,8 @@ export function getFieldSchema(): FieldSchema {
         required: true,
         helpText: 'Formato DD-MM-AAAA',
       },
-      {
-        key: 'estadoCivil',
-        label: 'Estado civil',
-        type: 'select',
-        required: true,
-        options: [
-          { value: 'Soltero',           label: 'Soltero/a'         },
-          { value: 'Casado',            label: 'Casado/a'          },
-          { value: 'Divorciado',        label: 'Divorciado/a'      },
-          { value: 'Viudo',             label: 'Viudo/a'           },
-          { value: 'Conviviente Civil', label: 'Conviviente civil' },
-        ],
-      },
-      { key: 'nacionalidad',      label: 'Nacionalidad',        type: 'text',  required: true },
-      { key: 'profesion',         label: 'Profesión',           type: 'text',  required: true },
-      { key: 'telefonoCelular',   label: 'Teléfono celular',    type: 'phone', required: true },
-      { key: 'correoElectronico', label: 'Correo electrónico',  type: 'email', required: true },
-      { key: 'direccion',         label: 'Dirección',           type: 'text',  required: true, helpText: 'Calle y número (ej: Av. Providencia 1234)' },
-      {
-        key: 'region',
-        label: 'Región',
-        type: 'select',
-        required: true,
-        options: [
-          { value: 'Región de Arica y Parinacota',                        label: 'Región de Arica y Parinacota'                        },
-          { value: 'Región de Tarapacá',                                  label: 'Región de Tarapacá'                                  },
-          { value: 'Región de Antofagasta',                               label: 'Región de Antofagasta'                               },
-          { value: 'Región de Atacama',                                   label: 'Región de Atacama'                                   },
-          { value: 'Región de Coquimbo',                                  label: 'Región de Coquimbo'                                  },
-          { value: 'Región de Valparaíso',                                label: 'Región de Valparaíso'                                },
-          { value: 'Región Metropolitana de Santiago',                    label: 'Región Metropolitana de Santiago'                    },
-          { value: "Región del Libertador General Bernardo O'Higgins",    label: "Región del Libertador General Bernardo O'Higgins"    },
-          { value: 'Región del Maule',                                    label: 'Región del Maule'                                   },
-          { value: 'Región de Ñuble',                                     label: 'Región de Ñuble'                                     },
-          { value: 'Región del Biobío',                                   label: 'Región del Biobío'                                   },
-          { value: 'Región de La Araucanía',                              label: 'Región de La Araucanía'                              },
-          { value: 'Región de Los Ríos',                                  label: 'Región de Los Ríos'                                  },
-          { value: 'Región de Los Lagos',                                 label: 'Región de Los Lagos'                                 },
-          { value: 'Región de Aysén del General Carlos Ibáñez del Campo', label: 'Región de Aysén del General Carlos Ibáñez del Campo' },
-          { value: 'Región de Magallanes y de la Antártica Chilena',      label: 'Región de Magallanes y de la Antártica Chilena'      },
-        ],
-      },
+      { key: 'telefonoCelular',   label: 'Teléfono celular',   type: 'phone', required: true  },
+      { key: 'correoElectronico', label: 'Correo electrónico', type: 'email', required: true  },
       {
         key: 'comuna',
         label: 'Comuna',
@@ -93,10 +56,6 @@ export function getFieldSchema(): FieldSchema {
         required: true,
         options: COMUNAS.map((c) => ({ value: c, label: c })),
       },
-      { key: 'ciudad',     label: 'Ciudad',    type: 'text',           required: true },
-      { key: 'proyecto',   label: 'Proyecto',  type: 'cascade-parent', required: true },
-      { key: 'unidad',     label: 'Unidad',    type: 'cascade-child',  required: true },
-      { key: 'tipologia',  label: 'Tipología', type: 'cascade-auto',   required: true },
     ],
   };
 }
