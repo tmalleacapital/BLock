@@ -183,6 +183,8 @@ function maskEmail(email: string): string {
 }
 
 function getErrorHint(message: string): string {
+  if (/ya (existe|está registrado|está bloqueado|está tomado)|asociado a otro|registrado en el portal/i.test(message))
+    return 'El cliente ya figura en el portal. Revisa en "Mis bloqueos" o con la inmobiliaria si ya está tomado.';
   if (/autenticad/i.test(message)) return 'Tu sesión expiró — cierra sesión y vuelve a ingresar.';
   if (/reiniciado|disponible/i.test(message)) return 'El servidor se reinició. Vuelve a enviar el formulario.';
   if (/conexión|connection/i.test(message)) return 'Revisa tu conexión a internet e intenta nuevamente.';

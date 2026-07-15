@@ -125,6 +125,20 @@ def bloquear_cliente(data: dict) -> dict:
                 page.wait_for_timeout(3_000)
             page.wait_for_timeout(800)
 
+            # Si el RUT ya existe en el portal, la búsqueda prefill el nombre.
+            # No seguimos (el guardado se cuelga con clientes existentes) y avisamos.
+            nombre_existente = page.evaluate(
+                "() => (document.getElementById('input-name')?.value || '').trim()"
+            )
+            if nombre_existente:
+                return {
+                    "status": "error",
+                    "message": (
+                        f"El cliente {data.get('rut', '')} ya está registrado en el portal de "
+                        "Grupo Araucana. Revisa si ya está bloqueado o gestiónalo manualmente."
+                    ),
+                }
+
             apellidos = f"{data.get('apellidoPaterno', '')} {data.get('apellidoMaterno', '')}".strip()
             set_input(page, "input-name",      data.get("nombres", ""))
             set_input(page, "input-lastName",  apellidos)

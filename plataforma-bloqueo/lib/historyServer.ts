@@ -89,8 +89,11 @@ export function addRecord(
 
 export function isDuplicate(rut: string, inmobiliariaKey: string): boolean {
   const norm = (r: string) => r.replace(/[.\-]/g, '').toLowerCase();
+  // Un bloqueo rechazado no cuenta: el cliente quedó libre para reintentar.
   return getRecords().some(
-    (r) => norm(r.rut) === norm(rut) && r.inmobiliariaKey === inmobiliariaKey,
+    (r) => norm(r.rut) === norm(rut)
+      && r.inmobiliariaKey === inmobiliariaKey
+      && r.status !== 'rechazado',
   );
 }
 
