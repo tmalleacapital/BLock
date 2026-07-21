@@ -1,5 +1,5 @@
 import type { FieldSchema } from '../types';
-import { REGIONES } from './catalogos';
+import { REGIONES, COMUNAS_POR_REGION } from './catalogos';
 
 export function getFieldSchema(): FieldSchema {
   return {
@@ -31,9 +31,10 @@ export function getFieldSchema(): FieldSchema {
       {
         key: 'comuna',
         label: 'Comuna',
-        type: 'text',
+        type: 'select',
         required: true,
-        helpText: 'Escríbela tal como aparece en el portal',
+        // Solo las comunas que Imagina tiene para esa región, tal cual el portal.
+        optionsBy: { field: 'region', options: COMUNAS_POR_REGION },
       },
       { key: 'telefonoCelular', label: 'Teléfono celular', type: 'phone', required: true },
       { key: 'correoElectronico', label: 'Correo electrónico', type: 'email', required: true },

@@ -208,19 +208,26 @@ def bloquear_cliente(data: dict) -> dict:
                 timeout=10_000,
             )
 
-            comuna_texto = data.get("comuna", "")
+            # La ficha envía el CÓDIGO de comuna del portal (ej. "13123"); se acepta
+            # también el nombre por compatibilidad con datos antiguos.
+            comuna_in = data.get("comuna", "")
             comuna_val = f.evaluate(
-                """(text) => {
+                """(valor) => {
                     const el = document.querySelector('#comuna');
-                    const opt = Array.from(el.options).find(
-                        o => o.text.trim().toLowerCase() === text.trim().toLowerCase()
+                    const v = (valor || '').trim();
+                    const porValor = Array.from(el.options).find(o => o.value === v);
+                    if (porValor) return porValor.value;
+                    const porTexto = Array.from(el.options).find(
+                        o => o.text.trim().toLowerCase() === v.toLowerCase()
                     );
-                    return opt ? opt.value : '';
+                    return porTexto ? porTexto.value : '';
                 }""",
-                comuna_texto,
+                comuna_in,
             )
             if not comuna_val:
-                raise ValueError(f'Comuna "{comuna_texto}" no encontrada en el selector del portal')
+                raise ValueError(
+                    f'La comuna "{comuna_in}" no está disponible en el portal para esa región'
+                )
             f.select_option("#comuna", comuna_val)
 
             # ── 8. Contacto ────────────────────────────────────────────────────
@@ -346,7 +353,7 @@ DATOS_PRUEBA = {
     "calle":             "Av. Providencia",
     "numero":            "1234",
     "region":            "13",
-    "comuna":            "Providencia",
+    "comuna":            "13123",   # Providencia (código del portal)
     "telefonoCelular":   "+56912345678",
     "correoElectronico": "juan@example.com",
 }

@@ -74,14 +74,38 @@ function FieldInput({
   onChange,
   stockData,
   parentValue,
+  parentLabel,
 }: {
   field: FieldDef;
   value: string;
   onChange: (key: string, val: string) => void;
   stockData?: Record<string, UnidadEntry[]>;
   parentValue?: string;
+  parentLabel?: string;
 }) {
   const cls = `${inputBase} ${inputFocusRing}`;
+
+  // Select dependiente (ej. comuna según región): las opciones salen del padre.
+  if (field.optionsBy) {
+    const opciones = parentValue ? (field.optionsBy.options[parentValue] ?? []) : [];
+    return (
+      <select
+        id={field.key}
+        value={value}
+        onChange={(e) => onChange(field.key, e.target.value)}
+        disabled={!parentValue}
+        className={`${cls} cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed`}
+        style={{ ...inputNormal, color: value ? 'var(--foreground)' : 'var(--muted)' }}
+      >
+        <option value="">
+          {parentValue ? 'Selecciona…' : `Primero elige ${(parentLabel ?? 'la opción anterior').toLowerCase()}`}
+        </option>
+        {opciones.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    );
+  }
 
   if (field.type === 'cascade-parent' && stockData && Object.keys(stockData).length > 0) {
     const proyectos = Object.keys(stockData).sort();
@@ -244,6 +268,12 @@ export default function FichaForm({
     setDupWarning(false);
   };
 
+  // Pares padre→hijo de los selects dependientes (ej. región → comuna).
+  const dependientes = useMemo(
+    () => schema.fields.flatMap((f) => (f.optionsBy ? [{ hijo: f.key, padre: f.optionsBy.field }] : [])),
+    [schema],
+  );
+
   const handleChange = useCallback((key: string, value: string) => {
     setValues((prev) => {
       const formatted = key === 'rut'
@@ -252,6 +282,10 @@ export default function FichaForm({
           ? formatFecha(value)
           : value;
       const next = { ...prev, [key]: formatted };
+      // Si cambia un campo padre, se limpia el hijo (sus opciones ya no aplican).
+      for (const d of dependientes) {
+        if (d.padre === key) next[d.hijo] = '';
+      }
       if (key === 'proyecto') {
         next.unidad    = '';
         next.tipologia = '';
@@ -263,7 +297,7 @@ export default function FichaForm({
       }
       return next;
     });
-  }, [stockData, fechaKeys]);
+  }, [stockData, fechaKeys, dependientes]);
 
   // Polling effect
   useEffect(() => {
@@ -475,7 +509,14 @@ export default function FichaForm({
                         value={values[field.key] ?? ''}
                         onChange={handleChange}
                         stockData={stockData}
-                        parentValue={field.type === 'cascade-child' ? (values['proyecto'] ?? '') : undefined}
+                        parentValue={
+                          field.optionsBy
+                            ? (values[field.optionsBy.field] ?? '')
+                            : field.type === 'cascade-child'
+                              ? (values['proyecto'] ?? '')
+                              : undefined
+                        }
+                        parentLabel={field.optionsBy ? fieldMap[field.optionsBy.field]?.label : undefined}
                       />
                       {field.helpText && (
                         <p className="mt-1 text-xs" style={{ color: 'var(--muted)' }}>

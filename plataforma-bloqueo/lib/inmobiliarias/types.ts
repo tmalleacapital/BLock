@@ -18,6 +18,9 @@ export interface FieldDef {
   options?: SelectOption[];
   helpText?: string;
   showWhen?: { field: string; value: string };
+  /** Select dependiente: las opciones salen de `options[valor del campo padre]`.
+   *  Se deshabilita mientras el padre esté vacío y se limpia si el padre cambia. */
+  optionsBy?: { field: string; options: Record<string, SelectOption[]> };
 }
 
 export interface FieldGroup {
