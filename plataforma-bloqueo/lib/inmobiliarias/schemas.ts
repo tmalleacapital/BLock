@@ -34,7 +34,9 @@ export interface InmobiliariaEntry {
 export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'araucana',        name: 'Grupo Araucana',  enabled: true, active: true,  script: 'Bloqueo de Clientes Grupo Araucana.py' },
   { key: 'convet',          name: 'Convet',          enabled: true, active: true,  emailRecipients: ['vcorrales@convet.cl'], script: 'Bloqueo Clientes Convet.py' },
-  { key: 'danacorp',        name: 'Danacorp',        enabled: true, active: true,  emailRecipients: ['sdonoso@danacorp.cl'], script: 'Bloqueo Cliente Danacorp.py' },
+  // Danacorp: fuera de servicio a pedido — no se lista en ningún lado. Se
+  // conserva la configuración por si se reactiva (basta con active: true).
+  { key: 'danacorp',        name: 'Danacorp',        enabled: true, active: false, emailRecipients: ['sdonoso@danacorp.cl'], script: 'Bloqueo Cliente Danacorp.py' },
   { key: 'deisa',           name: 'Deisa',           enabled: true, active: true,  emailRecipients: ['dsanchez@deisa.cl'], script: 'Bloqueo Cliente Deisa.py' },
   { key: 'ecasa',           name: 'Ecasa',           enabled: true, active: true,  emailRecipients: ['canalinversiones@ecasa.cl'], script: 'Bloqueo Clientes Ecasa.py' },
   { key: 'euro',            name: 'Euro',            enabled: true, active: true,  script: 'Bloqueo Cliente Euro.py' },
