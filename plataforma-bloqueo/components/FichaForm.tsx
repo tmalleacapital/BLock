@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { FieldDef, FieldSchema, RunResult, UnidadEntry } from '@/lib/inmobiliarias/types';
 import { savePendingJob, claimPendingJob } from '@/lib/pendingJobs';
 import { validarRut } from '@/lib/rut';
+import { DIAS_BLOQUEO } from '@/lib/vigencia';
 
 interface FichaFormProps {
   inmobiliariaKey: string;
@@ -504,11 +505,12 @@ export default function FichaForm({
             }}
           >
             <p className="text-sm font-semibold" style={{ color: 'var(--warning)' }}>
-              RUT ya registrado
+              RUT con bloqueo vigente
             </p>
             <p className="text-xs mt-1" style={{ color: 'var(--foreground)' }}>
               El RUT <span className="font-mono font-semibold">{values.rut}</span> ya tiene un
-              bloqueo registrado en {inmobiliariaName}. ¿Deseas continuar de todas formas?
+              bloqueo vigente en {inmobiliariaName}. Los bloqueos duran {DIAS_BLOQUEO} días; pasado
+              ese plazo el cliente se libera solo. ¿Deseas continuar de todas formas?
             </p>
             <div className="flex gap-2 mt-3">
               <button

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSession, COOKIE_NAME } from '@/lib/auth';
 import { getAllHistory } from '@/lib/historyServer';
 import MisBloqueosClient from '@/components/MisBloqueosClient';
+import { DIAS_BLOQUEO } from '@/lib/vigencia';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +22,10 @@ export default async function MisBloqueosPage() {
       <MisBloqueosClient initial={records} />
 
       <p className="text-xs" style={{ color: 'var(--muted)' }}>
-        El estado se actualiza cuando la inmobiliaria responde. Las inmobiliarias por portal se bloquean
-        directo, por eso no muestran estado. Esta vista se refresca sola cada 15 segundos.
+        Cada bloqueo dura <strong>{DIAS_BLOQUEO} días</strong>: pasado ese plazo el cliente queda
+        liberado y se puede volver a bloquear. El estado se actualiza cuando la inmobiliaria responde;
+        las inmobiliarias por portal se bloquean directo, por eso no muestran estado. Esta vista se
+        refresca sola cada 15 segundos.
       </p>
     </main>
   );

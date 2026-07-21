@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import path from 'path';
+import { estaVigente } from './vigencia';
 
 export type BlockingStatus = 'pendiente' | 'aceptado' | 'rechazado';
 
@@ -89,11 +90,13 @@ export function addRecord(
 
 export function isDuplicate(rut: string, inmobiliariaKey: string): boolean {
   const norm = (r: string) => r.replace(/[.\-]/g, '').toLowerCase();
-  // Un bloqueo rechazado no cuenta: el cliente quedó libre para reintentar.
+  // Solo cuentan los bloqueos que siguen tomando al cliente: un rechazo lo
+  // libera de inmediato y, pasados los 15 días de vigencia, también.
   return getRecords().some(
     (r) => norm(r.rut) === norm(rut)
       && r.inmobiliariaKey === inmobiliariaKey
-      && r.status !== 'rechazado',
+      && r.status !== 'rechazado'
+      && estaVigente(r.fecha),
   );
 }
 

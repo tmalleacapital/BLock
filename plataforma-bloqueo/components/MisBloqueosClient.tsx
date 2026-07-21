@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { BlockingRecord } from '@/lib/historyServer';
+import { estaVigente, diasRestantes } from '@/lib/vigencia';
 import EstadoBadge from './EstadoBadge';
 
 const cardShadow = '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)';
@@ -25,6 +26,7 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
   const [records, setRecords] = useState<BlockingRecord[]>(initial);
   const [inmo, setInmo] = useState('');
   const [estado, setEstado] = useState('');
+  const [vig, setVig] = useState('');
   const [q, setQ] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -61,17 +63,20 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
       if (inmo && r.inmobiliariaName !== inmo) return false;
       if (estado === 'sin' && r.status) return false;
       if (estado && estado !== 'sin' && r.status !== estado) return false;
+      if (vig === 'vigente' && !estaVigente(r.fecha)) return false;
+      if (vig === 'liberado' && estaVigente(r.fecha)) return false;
       if (q.trim()) {
         const hay = `${r.rut} ${r.nombre}`.toLowerCase();
         if (!hay.includes(q.trim().toLowerCase())) return false;
       }
       return true;
     }),
-    [records, inmo, estado, q],
+    [records, inmo, estado, vig, q],
   );
 
   const pendientes = records.filter((r) => r.status === 'pendiente').length;
-  const hayFiltro = Boolean(inmo || estado || q.trim());
+  const vigentes = records.filter((r) => r.status !== 'rechazado' && estaVigente(r.fecha)).length;
+  const hayFiltro = Boolean(inmo || estado || vig || q.trim());
 
   return (
     <>
@@ -85,6 +90,10 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>
             {records.length} solicitud{records.length !== 1 ? 'es' : ''}
+            {' · '}
+            <span style={{ color: 'var(--success)' }}>
+              {vigentes} vigente{vigentes !== 1 ? 's' : ''}
+            </span>
             {pendientes > 0 && (
               <>
                 {' · '}
@@ -138,10 +147,15 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
           <option value="rechazado">Rechazado</option>
           <option value="sin">Sin estado (portal)</option>
         </select>
+        <select value={vig} onChange={(e) => setVig(e.target.value)} className={selectCls} style={selectStyle}>
+          <option value="">Vigentes y liberados</option>
+          <option value="vigente">Solo vigentes</option>
+          <option value="liberado">Solo liberados</option>
+        </select>
         {hayFiltro && (
           <button
             type="button"
-            onClick={() => { setInmo(''); setEstado(''); setQ(''); }}
+            onClick={() => { setInmo(''); setEstado(''); setVig(''); setQ(''); }}
             className="text-xs font-semibold"
             style={{ color: 'var(--accent)' }}
           >
@@ -167,7 +181,7 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Fecha', 'RUT', 'Nombre', 'Inmobiliaria', 'Estado'].map((h) => (
+                  {['Fecha', 'RUT', 'Nombre', 'Inmobiliaria', 'Estado', 'Vigencia'].map((h) => (
                     <th
                       key={h}
                       className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest"
@@ -198,6 +212,17 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
                     </td>
                     <td className="px-4 py-3">
                       <EstadoBadge status={r.status} />
+                    </td>
+                    <td className="px-4 py-3 text-xs whitespace-nowrap">
+                      {r.status === 'rechazado' ? (
+                        <span style={{ color: 'var(--muted)' }}>—</span>
+                      ) : estaVigente(r.fecha) ? (
+                        <span style={{ color: 'var(--success)' }}>
+                          {diasRestantes(r.fecha)} día{diasRestantes(r.fecha) !== 1 ? 's' : ''}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--muted)' }}>Liberado</span>
+                      )}
                     </td>
                   </tr>
                 ))}
