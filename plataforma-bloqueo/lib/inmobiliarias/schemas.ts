@@ -44,7 +44,7 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'fundamenta',      name: 'Fundamenta',      enabled: true, active: true,  emailRecipients: ['andres.lopez@fundamenta.cl'], script: 'Bloqueo Clientes Fundamenta.py' },
   { key: 'imagina',         name: 'Imagina',         enabled: true, active: true,  script: 'Bloqueo Cliente Imagina.py' },
   { key: 'ingevec',         name: 'Ingevec',         enabled: true, active: false },
-  { key: 'larrain-prieto',  name: 'Larraín Prieto',  enabled: true, active: true,  paused: true, script: 'Bloqueo Cliente Larrain Prieto.py' },
+  { key: 'larrain-prieto',  name: 'Larraín Prieto',  enabled: true, active: true,  script: 'Bloqueo Cliente Larrain Prieto.py' },
   { key: 'leben',           name: 'Leben',           enabled: true, active: true,  emailRecipients: ['lsilva@ileben.cl', 'jfoppiano@ileben.cl'], script: 'Bloqueo Cliente Leben.py' },
   { key: 'maestra',         name: 'Maestra',         enabled: true, active: true,  script: 'Bloqueo de Clientes Maestra.py' },
   { key: 'norte-verde',     name: 'Norte Verde',     enabled: true, active: false },
