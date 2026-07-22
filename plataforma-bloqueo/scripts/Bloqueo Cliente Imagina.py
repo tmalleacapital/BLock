@@ -202,15 +202,32 @@ def bloquear_cliente(data: dict) -> dict:
             escribir(f.locator("#numerocalle"), data.get("numero", ""))
 
             # ── 7. Región → esperar carga de comunas → seleccionar ─────────────
-            f.select_option("#region", data.get("region", ""))
-            f.wait_for_function(
-                "() => (document.querySelector('#comuna')?.options?.length ?? 0) > 1",
-                timeout=10_000,
-            )
-
             # La ficha envía el CÓDIGO de comuna del portal (ej. "13123"); se acepta
             # también el nombre por compatibilidad con datos antiguos.
             comuna_in = data.get("comuna", "")
+
+            f.select_option("#region", data.get("region", ""))
+            # Al elegir región el portal RECARGA las comunas (postback). Hay que
+            # esperar a que aparezca la comuna objetivo: NO basta "que haya opciones",
+            # porque la lista por defecto (RM) ya trae ~54 y el script leería la vieja.
+            try:
+                f.wait_for_function(
+                    """(target) => {
+                        const el = document.querySelector('#comuna');
+                        if (!el) return false;
+                        const v = (target || '').trim();
+                        const t = v.toLowerCase();
+                        return Array.from(el.options).some(
+                            o => o.value === v || o.text.trim().toLowerCase() === t
+                        );
+                    }""",
+                    arg=comuna_in,
+                    timeout=15_000,
+                )
+            except Exception:
+                # Si no aparece, el chequeo de abajo dará el error claro.
+                pass
+
             comuna_val = f.evaluate(
                 """(valor) => {
                     const el = document.querySelector('#comuna');
