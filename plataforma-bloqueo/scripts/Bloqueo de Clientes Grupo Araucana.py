@@ -26,7 +26,7 @@ import json
 import os
 from playwright.sync_api import Page
 
-from _browser_comun import load_dotenv, abrir_navegador, set_input
+from _browser_comun import load_dotenv, abrir_navegador, set_input, telefono_9
 
 load_dotenv()
 
@@ -46,16 +46,6 @@ PROYECTO_DEFECTO = "Aires de Marañon"
 DESTINO_COMPRA    = "Inversión"
 MEDIO_ORIGEN      = "Capital Inteligente"
 MEDIO_REALIZACION = "Online"
-
-
-def _telefono_local(valor: str) -> str:
-    """Deja solo los 9 dígitos del móvil. El campo de Cliperty es intl-tel-input y
-    ya trae el prefijo +56 aparte: si se le pasa '+56993092974' el número queda
-    inválido y el modal del cliente no guarda."""
-    t = "".join(c for c in (valor or "") if c.isdigit())
-    if len(t) > 9 and t.startswith("56"):
-        t = t[2:]
-    return t
 
 
 def _select_por_label(page: Page, selector: str, label: str) -> None:
@@ -152,7 +142,7 @@ def bloquear_cliente(data: dict) -> dict:
             apellidos = f"{data.get('apellidoPaterno', '')} {data.get('apellidoMaterno', '')}".strip()
             set_input(page, "input-name",      data.get("nombres", ""))
             set_input(page, "input-lastName",  apellidos)
-            set_input(page, "input-cellPhone", _telefono_local(data.get("telefonoCelular", "")))
+            set_input(page, "input-cellPhone", telefono_9(data.get("telefonoCelular", "")))
             set_input(page, "input-email",     data.get("correoElectronico", ""))
             page.wait_for_timeout(400)
 

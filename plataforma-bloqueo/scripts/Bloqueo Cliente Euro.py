@@ -11,6 +11,7 @@ import json
 import datetime
 import unicodedata
 import os
+from _browser_comun import telefono_9
 from playwright.sync_api import sync_playwright, Page
 
 
@@ -304,7 +305,7 @@ def bloquear_cliente(data: dict) -> dict:
                 tel = page.locator("input.vti__input").nth(1)
                 tel.scroll_into_view_if_needed()
                 tel.click()
-                tel.fill(data.get("telefonoCelular", ""))
+                tel.fill(telefono_9(data.get("telefonoCelular", "")))
                 page.wait_for_timeout(200)
 
                 rellenar('[data-cy="create-customer-email"]', data.get("correoElectronico", ""))

@@ -23,6 +23,7 @@ import sys
 import json
 import os
 import re
+from _browser_comun import telefono_9
 from playwright.sync_api import sync_playwright
 
 
@@ -112,7 +113,7 @@ def bloquear_cliente(data: dict) -> dict:
             frame.locator("#txtPaterno").fill(data.get("apellidoPaterno", ""))
             frame.locator("#txtMaterno").fill(data.get("apellidoMaterno", ""))
             frame.locator("#txtMail").fill(data.get("correoElectronico", ""))
-            frame.locator("#txtFono").fill(data.get("telefonoCelular", ""))
+            frame.locator("#txtFono").fill(telefono_9(data.get("telefonoCelular", "")))
             frame.locator("#dpdwnTipoCliente").select_option(TIPO_CLIENTE)
             frame.locator("#ddpFuente").select_option(FUENTE)
             page.wait_for_timeout(500)

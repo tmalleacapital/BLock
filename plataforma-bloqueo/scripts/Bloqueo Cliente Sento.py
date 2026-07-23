@@ -41,7 +41,7 @@ from email.mime.multipart import MIMEMultipart
 
 from playwright.sync_api import Page
 
-from _browser_comun import load_dotenv, abrir_navegador, set_input
+from _browser_comun import load_dotenv, abrir_navegador, set_input, telefono_56
 
 load_dotenv()
 
@@ -67,18 +67,6 @@ def _rut_partes(rut: str):
     else:
         num, dv = limpio[:-1], limpio[-1:]
     return num, dv
-
-
-def _telefono(valor: str) -> str:
-    """Normaliza a formato +56XXXXXXXXX que espera el portal."""
-    t = (valor or "").replace(" ", "").replace("-", "")
-    if t.startswith("+"):
-        return t
-    if t.startswith("56"):
-        return "+" + t
-    if len(t) == 9:
-        return "+56" + t
-    return t
 
 
 def _comuna_value(page: Page, comuna: str) -> str:
@@ -156,7 +144,7 @@ def bloquear_cliente(data: dict) -> dict:
             set_input(page, "nat_dir_comuna", comuna_val)   # autocompleta región/provincia
             page.wait_for_timeout(1_200)
 
-            page.fill("#nat_fono_celular", _telefono(data.get("telefonoCelular", "")))
+            page.fill("#nat_fono_celular", telefono_56(data.get("telefonoCelular", "")))
             page.fill("#nat_email",        data.get("correoElectronico", ""))
 
             # ── 4. Continuar hasta el paso 4 "Otros" ───────────────────────────

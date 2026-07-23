@@ -50,6 +50,30 @@ def abrir_navegador(
             browser.close()
 
 
+def _solo_digitos(valor: str) -> str:
+    """Deja solo dígitos y quita el prefijo país 56 si viene incluido."""
+    t = "".join(c for c in (valor or "") if c.isdigit())
+    if len(t) > 9 and t.startswith("56"):
+        t = t[2:]
+    return t
+
+
+def telefono_9(valor: str) -> str:
+    """Móvil en formato local de 9 dígitos ('993092974').
+    Para campos intl-tel-input / vue-tel-input, que ya traen el +56 aparte: si se
+    les pasa el prefijo otra vez el número queda inválido y el form no guarda."""
+    return _solo_digitos(valor)
+
+
+def telefono_56(valor: str) -> str:
+    """Móvil en formato internacional ('+56993092974'), para portales que lo
+    esperan completo en un input de texto normal."""
+    t = _solo_digitos(valor)
+    if not t:
+        return ""
+    return "+56" + t if len(t) == 9 else "+" + t
+
+
 def set_input(page: Page, campo_id: str, valor: str) -> bool:
     """Rellena un input/textarea/select por id disparando input/change/BLUR.
     Devuelve False si el elemento no existe."""

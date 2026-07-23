@@ -34,7 +34,7 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 
-from _browser_comun import load_dotenv, abrir_navegador, set_input
+from _browser_comun import load_dotenv, abrir_navegador, set_input, telefono_56
 
 load_dotenv()
 
@@ -60,18 +60,6 @@ def _rut_partes(rut: str):
     else:
         num, dv = limpio[:-1], limpio[-1:]
     return num, dv
-
-
-def _telefono(valor: str) -> str:
-    """Normaliza a formato +56XXXXXXXXX que espera el portal."""
-    t = (valor or "").replace(" ", "").replace("-", "")
-    if t.startswith("+"):
-        return t
-    if t.startswith("56"):
-        return "+" + t
-    if len(t) == 9:
-        return "+56" + t
-    return t
 
 
 def bloquear_cliente(data: dict) -> dict:
@@ -127,7 +115,7 @@ def bloquear_cliente(data: dict) -> dict:
             page.fill("#nat_apellido1", data.get("apellidoPaterno", ""))
             if data.get("apellidoMaterno"):
                 page.fill("#nat_apellido2", data.get("apellidoMaterno", ""))
-            page.fill("#nat_fono_celular", _telefono(data.get("telefonoCelular", "")))
+            page.fill("#nat_fono_celular", telefono_56(data.get("telefonoCelular", "")))
             page.fill("#nat_email",        data.get("correoElectronico", ""))
 
             # ── 4. Continuar hasta el paso 4 "Otros" ───────────────────────────

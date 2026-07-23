@@ -19,6 +19,7 @@ import sys
 import json
 import time
 import os
+from _browser_comun import telefono_56
 from playwright.sync_api import sync_playwright, Page, Frame
 
 
@@ -248,7 +249,7 @@ def bloquear_cliente(data: dict) -> dict:
             f.select_option("#comuna", comuna_val)
 
             # ── 8. Contacto ────────────────────────────────────────────────────
-            f.fill("#telefonocelular",   data.get("telefonoCelular", ""))
+            f.fill("#telefonocelular",   telefono_56(data.get("telefonoCelular", "")))
             f.fill("#correoelectronico", data.get("correoElectronico", ""))
 
             # ── 9. Campos fijos ────────────────────────────────────────────────
