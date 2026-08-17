@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { getSession, COOKIE_NAME, sendConfirmationEmail } from '@/lib/auth';
+import { getSession, COOKIE_NAME, sendConfirmationEmail, isAdmin } from '@/lib/auth';
 import { getAllHistory, addRecord, isDuplicate } from '@/lib/historyServer';
 import type { BlockingRecord } from '@/lib/historyServer';
 import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
   if (mine) {
     const email = session.email.toLowerCase();
     return Response.json(all.filter((r) => (r.asesorEmail ?? '').toLowerCase() === email));
+  }
+  // El historial completo (RUT + nombre de TODOS los asesores) es solo para admins.
+  if (!isAdmin(session.email)) {
+    return Response.json({ error: 'No autorizado.' }, { status: 403 });
   }
   return Response.json(all);
 }
