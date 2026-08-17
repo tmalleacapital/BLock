@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AUTH_SECRET } from '@/lib/authSecret';
 
 const COOKIE_NAME = 'b_lock_session';
 const STATIC_PREFIXES = ['/_next', '/favicon.ico', '/logo.svg', '/LogoBLock'];
-const AUTH_SECRET = process.env.AUTH_SECRET || 'b-lock-default-secret-please-set-AUTH_SECRET';
 
 function fromB64url(s: string): string {
   const b64 = s.replace(/-/g, '+').replace(/_/g, '/');

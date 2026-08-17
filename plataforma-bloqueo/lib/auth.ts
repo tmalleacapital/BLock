@@ -1,5 +1,6 @@
 import { randomInt, createHmac, timingSafeEqual } from 'crypto';
 import nodemailer from 'nodemailer';
+import { AUTH_SECRET } from './authSecret';
 
 // ── Global state (sólo OTP; las sesiones son stateless y firmadas) ────────────
 
@@ -14,10 +15,7 @@ g.__auth_otps ??= new Map();
 
 const otps = g.__auth_otps!;
 
-// Secreto para firmar las cookies de sesión. Debe ser ESTABLE entre deploys
-// (configúralo en Railway → Variables como AUTH_SECRET). El valor por defecto
-// mantiene las sesiones válidas aunque no se configure, pero es menos seguro.
-const AUTH_SECRET = process.env.AUTH_SECRET || 'b-lock-default-secret-please-set-AUTH_SECRET';
+// AUTH_SECRET (firma de sesiones) vive en lib/authSecret.ts — obligatorio en prod.
 
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;   // 8 h
 const OTP_TTL_MS     = 10 * 60 * 1000;        // 10 min

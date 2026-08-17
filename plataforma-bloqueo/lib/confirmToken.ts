@@ -1,10 +1,9 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import { AUTH_SECRET } from './authSecret';
 
 // Token firmado (HMAC-SHA256) para los enlaces "Aceptar / Rechazar" que recibe
 // la inmobiliaria en el correo. Es una capacidad: quien tiene el enlace puede
 // responder esa solicitud puntual, pero no puede falsificar ni alterar los datos.
-
-const AUTH_SECRET = process.env.AUTH_SECRET || 'b-lock-default-secret-please-set-AUTH_SECRET';
 
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
 
