@@ -35,12 +35,18 @@ def abrir_navegador(
     height: int = 960,
     locale: str = 'es-CL',
     accept_dialogs: bool = True,
+    user_agent: str | None = None,
 ):
     """Entrega una Page lista (navegador + contexto) y cierra todo al salir.
-    Con accept_dialogs=True auto-acepta los alert/confirm nativos."""
+    Con accept_dialogs=True auto-acepta los alert/confirm nativos.
+    user_agent: si se pasa, sobreescribe el UA (útil en portales que bloquean
+    el UA 'HeadlessChrome' por defecto)."""
+    ctx_kwargs: dict = {"viewport": {"width": width, "height": height}, "locale": locale}
+    if user_agent:
+        ctx_kwargs["user_agent"] = user_agent
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=headless, slow_mo=slow_mo)
-        context = browser.new_context(viewport={"width": width, "height": height}, locale=locale)
+        context = browser.new_context(**ctx_kwargs)
         page = context.new_page()
         if accept_dialogs:
             page.on("dialog", lambda d: d.accept())

@@ -33,6 +33,28 @@ HEADLESS     = os.environ.get('HEADLESS', '1') != '0'
 # leads vuelven a CI). No se le pide al asesor.
 CORREO_FIJO = "soporte.comercial@capitalinteligente.cl"
 
+# UA de Chrome real: paz.cl puede ser lento o rechazar el UA "HeadlessChrome".
+UA_CHROME = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+)
+
+
+def _abrir_pagina(page, url: str, espera_selector: str, timeout: int = 60_000) -> None:
+    """Navega de forma tolerante: espera el 'commit' (llega la respuesta) y luego
+    el contenido real (espera_selector), con un reintento. Es más robusto que
+    'domcontentloaded' cuando el portal responde lento desde el servidor."""
+    ultimo = None
+    for _ in range(2):
+        try:
+            page.goto(url, wait_until="commit", timeout=timeout)
+            page.wait_for_selector(espera_selector, timeout=timeout)
+            return
+        except Exception as e:
+            ultimo = e
+            page.wait_for_timeout(2_000)
+    raise ultimo
+
 
 def _cerrar_cookies(page) -> None:
     """Descarta el aviso de cookies si aparece (elige 'Rechazar')."""
@@ -59,10 +81,13 @@ def bloquear_cliente(data: dict) -> dict:
         return {"status": "error", "message": "Falta el proyecto de Paz a registrar."}
 
     try:
-        with abrir_navegador(headless=HEADLESS, slow_mo=150, width=1440, height=960) as page:
+        with abrir_navegador(headless=HEADLESS, slow_mo=150, width=1440, height=960,
+                             user_agent=UA_CHROME) as page:
+            page.set_default_timeout(45_000)
+
             # ── 1. Ir al registro (sin sesión redirige al login) ───────────────
-            page.goto(URL_REGISTRO, wait_until="domcontentloaded")
-            page.wait_for_timeout(1_500)
+            _abrir_pagina(page, URL_REGISTRO, "#run, #clave")
+            page.wait_for_timeout(1_000)
             _cerrar_cookies(page)
 
             # ── 2. Login si aparece el formulario de acceso (#clave) ───────────
@@ -70,18 +95,17 @@ def bloquear_cliente(data: dict) -> dict:
                 page.fill("#correo", usuario)
                 page.fill("#clave", clave)
                 page.get_by_role("button", name="Ingresar").first.click()
-                page.wait_for_load_state("networkidle")
-                page.wait_for_timeout(2_000)
-                # Asegurar que estamos en el formulario de registro.
-                if page.locator("#run").count() == 0:
-                    page.goto(URL_REGISTRO, wait_until="domcontentloaded")
-                    page.wait_for_timeout(1_500)
+                # Tras el login debe aparecer el formulario de registro.
+                try:
+                    page.wait_for_selector("#run", timeout=45_000)
+                except Exception:
+                    _abrir_pagina(page, URL_REGISTRO, "#run")
                 _cerrar_cookies(page)
 
             # ── 3. Rellenar el formulario "Registro de leads" ──────────────────
             # page.fill() usa el setter nativo (React/Vue lo reconocen); este form
             # valida al enviar, no al perder foco, así que no hace falta blur.
-            page.wait_for_selector("#run", state="visible", timeout=30_000)
+            page.wait_for_selector("#run", state="visible", timeout=45_000)
             page.fill("#run",            data.get("rut", ""))
             page.fill("#nombreCompleto", data.get("nombreCompleto", ""))
             page.fill("#correo",         CORREO_FIJO)
