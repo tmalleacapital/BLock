@@ -89,7 +89,7 @@ export default function Sidebar({ isAdmin, mobileOpen = false, onClose }: { isAd
       <Link href="/" className="px-4 pt-5 pb-4 block no-underline" onClick={onClose}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/logo.svg"
+          src="/logo.svg?v=2"
           alt="Brekto Client Lock"
           style={{
             width: '100%',

@@ -61,10 +61,10 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex justify-center">
           <Image
-            src="/logo.svg"
+            src="/logo.svg?v=2"
             alt="B-Lock"
             width={160}
-            height={48}
+            height={54}
             style={{ filter: 'var(--logo-filter)' }}
             priority
           />

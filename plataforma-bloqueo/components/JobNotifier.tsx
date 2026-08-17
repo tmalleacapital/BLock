@@ -61,7 +61,7 @@ export default function JobNotifier() {
               if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('Cliente bloqueado', {
                   body: `${claimed.nombre} · ${claimed.inmobiliariaName}`,
-                  icon: '/logo.svg',
+                  icon: '/logo.svg?v=2',
                 });
               }
             } else {
