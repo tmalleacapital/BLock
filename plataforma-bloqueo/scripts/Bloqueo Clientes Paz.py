@@ -1,43 +1,131 @@
 """
 Bloqueo Clientes Paz.py
-Envía el correo de bloqueo de cliente a Paz vía SMTP de Gmail.
+Automatización de bloqueo de clientes en el Sistema de Brokers de Paz Corp
+(https://www.paz.cl/brokers/registro-lead).
 
+El bloqueo consiste en REGISTRAR EL LEAD del cliente a nombre de Capital
+Inteligente. Formulario de una sola página (sin wizard ni modal):
+  RUT (#run), Nombre y Apellido (#nombreCompleto), Correo (#correo, FIJO al
+  soporte de CI), Teléfono (#fono, +56) y Proyecto (#codProyecto, por código).
+Al enviar aparece la alerta `.registro-lead__alert--success`
+("Lead registrado exitosamente.").
+
+Login: correo + contraseña de broker (PAZ_USER / PAZ_PASS).
+
+Uso standalone:  python "Bloqueo Clientes Paz.py"
 Uso con datos:   python "Bloqueo Clientes Paz.py" '{"rut":"...", ...}'
+Ver navegador:   HEADLESS=0 python "Bloqueo Clientes Paz.py"
 """
 
 import sys
 import json
-from _email_comun import enviar_bloqueo
+import os
 
-DESTINATARIOS = ["issys.ferrer@pazcorp.cl", "fernando.florindo@pazcorp.cl"]
+from _browser_comun import load_dotenv, abrir_navegador, telefono_56
 
-LABELS = {
-    "rut":               "RUT",
-    "apellidoPaterno":   "Apellido paterno",
-    "apellidoMaterno":   "Apellido materno",
-    "nombres":           "Nombres",
-    "genero":            "Género",
-    "fechaNacimiento":   "Fecha de nacimiento",
-    "estadoCivil":       "Estado civil",
-    "nacionalidad":      "Nacionalidad",
-    "profesion":         "Profesión",
-    "telefonoCelular":   "Teléfono celular",
-    "correoElectronico": "Correo electrónico",
-    "direccion":         "Dirección",
-    "region":            "Región",
-    "comuna":            "Comuna",
-    "ciudad":            "Ciudad",
-    "proyecto":          "Proyecto",
-    "unidad":            "Unidad",
-    "tipologia":         "Tipología",
-}
+load_dotenv()
+
+URL_REGISTRO = "https://www.paz.cl/brokers/registro-lead"
+URL_LOGIN    = "https://www.paz.cl/brokers/login"
+HEADLESS     = os.environ.get('HEADLESS', '1') != '0'
+
+# El correo del lead es SIEMPRE el de soporte de Capital Inteligente (así los
+# leads vuelven a CI). No se le pide al asesor.
+CORREO_FIJO = "soporte.comercial@capitalinteligente.cl"
+
+
+def _cerrar_cookies(page) -> None:
+    """Descarta el aviso de cookies si aparece (elige 'Rechazar')."""
+    for etiqueta in ("Rechazar", "Aceptar"):
+        try:
+            btn = page.get_by_role("button", name=etiqueta)
+            if btn.first.is_visible():
+                btn.first.click(timeout=3_000)
+                page.wait_for_timeout(400)
+                return
+        except Exception:
+            pass
 
 
 def bloquear_cliente(data: dict) -> dict:
-    return enviar_bloqueo(DESTINATARIOS, LABELS, data)
+    usuario = os.environ.get('PAZ_USER')
+    clave = os.environ.get('PAZ_PASS')
+    if not usuario or not clave:
+        return {"status": "error",
+                "message": "Faltan credenciales: define PAZ_USER y PAZ_PASS."}
 
+    proyecto = (data.get("proyecto") or "").strip()
+    if not proyecto:
+        return {"status": "error", "message": "Falta el proyecto de Paz a registrar."}
+
+    try:
+        with abrir_navegador(headless=HEADLESS, slow_mo=150, width=1440, height=960) as page:
+            # ── 1. Ir al registro (sin sesión redirige al login) ───────────────
+            page.goto(URL_REGISTRO, wait_until="domcontentloaded")
+            page.wait_for_timeout(1_500)
+            _cerrar_cookies(page)
+
+            # ── 2. Login si aparece el formulario de acceso (#clave) ───────────
+            if page.locator("#clave").count() > 0:
+                page.fill("#correo", usuario)
+                page.fill("#clave", clave)
+                page.get_by_role("button", name="Ingresar").first.click()
+                page.wait_for_load_state("networkidle")
+                page.wait_for_timeout(2_000)
+                # Asegurar que estamos en el formulario de registro.
+                if page.locator("#run").count() == 0:
+                    page.goto(URL_REGISTRO, wait_until="domcontentloaded")
+                    page.wait_for_timeout(1_500)
+                _cerrar_cookies(page)
+
+            # ── 3. Rellenar el formulario "Registro de leads" ──────────────────
+            # page.fill() usa el setter nativo (React/Vue lo reconocen); este form
+            # valida al enviar, no al perder foco, así que no hace falta blur.
+            page.wait_for_selector("#run", state="visible", timeout=30_000)
+            page.fill("#run",            data.get("rut", ""))
+            page.fill("#nombreCompleto", data.get("nombreCompleto", ""))
+            page.fill("#correo",         CORREO_FIJO)
+            page.fill("#fono",           telefono_56(data.get("telefonoCelular", "")))
+            # Proyecto por código interno de Paz (value del <option>).
+            page.select_option("#codProyecto", value=proyecto)
+            page.wait_for_timeout(400)
+
+            # ── 4. Registrar ──────────────────────────────────────────────────
+            page.get_by_role("button", name="Registrar").first.click()
+
+            # ── 5. Leer la alerta de resultado ────────────────────────────────
+            alerta = page.locator(".registro-lead__alert").first
+            alerta.wait_for(state="visible", timeout=30_000)
+            page.wait_for_timeout(300)
+            clase = alerta.get_attribute("class") or ""
+            texto = (alerta.text_content() or "").strip()
+
+            if "success" in clase:
+                return {
+                    "status": "success",
+                    "message": f"Lead registrado en Paz Corp: {texto}",
+                }
+            return {
+                "status": "error",
+                "message": texto or "Paz rechazó el registro del lead.",
+            }
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+DATOS_PRUEBA = {
+    "rut":             "20.592.329-2",
+    "nombreCompleto":  "Valentín Pedrero Plá",
+    "telefonoCelular": "+56977346296",
+    "proyecto":        "I1561",  # Carrión 2
+}
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        result = bloquear_cliente(json.loads(sys.argv[1]))
-        print(json.dumps(result, ensure_ascii=False))
+        data = json.loads(sys.argv[1])
+    else:
+        data = DATOS_PRUEBA
+
+    result = bloquear_cliente(data)
+    print(json.dumps(result, ensure_ascii=False))

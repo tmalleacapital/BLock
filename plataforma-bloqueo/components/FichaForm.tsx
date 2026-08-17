@@ -406,7 +406,8 @@ export default function FichaForm({
 
     submitSnapshot.current = {
       rut: values.rut ?? '',
-      nombre: [values.nombres, values.apellidoPaterno].filter(Boolean).join(' '),
+      nombre: [values.nombres, values.apellidoPaterno].filter(Boolean).join(' ')
+        || values.nombreCompleto || '',
     };
 
     try {
