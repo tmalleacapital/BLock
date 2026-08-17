@@ -139,7 +139,7 @@ export default function HomePage() {
   }, [pollQueue]);
 
   const countToday = history.filter((r) => isToday(r.fecha)).length;
-  const active = INMOBILIARIAS.filter((inm) => inm.active);
+  const active = INMOBILIARIAS.filter((inm) => inm.active && !inm.paused);
 
   const activeQueuePortals = active.filter((inm) => {
     const s = queueData.portals[inm.key];
