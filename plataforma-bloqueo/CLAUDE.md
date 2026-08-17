@@ -4,6 +4,10 @@
 
 Plataforma web interna para que los asesores de Capital Inteligente registren/bloqueen clientes en portales de distintas inmobiliarias.
 
+> 📖 **Documentación completa del producto** (arquitectura, inventario de inmobiliarias,
+> variables de entorno, reglas de negocio, seguridad, gotchas por portal, roadmap):
+> ver [`DOCUMENTACION.md`](./DOCUMENTACION.md).
+
 ## Stack
 
 - **Next.js 16** (App Router) — `app/` con Server Components por defecto
@@ -35,27 +39,32 @@ npm run lint       # ESLint
 
 ## Arquitectura de adaptadores
 
-Cada inmobiliaria tiene su propio adaptador en `lib/inmobiliarias/<key>/`:
+Cada inmobiliaria tiene **schema** (campos del asesor) en `lib/inmobiliarias/<key>/schema.ts`
+y un **script Python** en `/scripts` (la automatización). Dos tipos: por portal (Playwright)
+o por correo (SMTP). El registro único está en `lib/inmobiliarias/schemas.ts`
+(`INMOBILIARIAS[]`, con `active`/`paused`/`emailRecipients`/`script`).
 
 ```
 lib/inmobiliarias/
-  types.ts              ← FieldDef, FieldSchema, RunResult, InmobiliariaAdapter
+  types.ts              ← FieldDef, FieldSchema (incluye optionsBy), RunResult
   schemas.ts            ← INMOBILIARIAS[] + getSchema(key) — UI-safe, sin imports de Node
   imagina/
-    catalogos.ts        ← datos estáticos (regiones, etc.)
+    catalogos.ts        ← datos estáticos (regiones, comunas por región, etc.)
     schema.ts           ← getFieldSchema()
-    adapter.ts          ← (a crear) InmobiliariaAdapter con run()
+scripts/
+  _browser_comun.py     ← helpers Playwright (abrir_navegador, set_input, telefono_9/56)
+  _email_comun.py       ← plantilla del correo de solicitud
+  Bloqueo … .py         ← un script por inmobiliaria
 ```
 
-Para agregar una nueva inmobiliaria:
-1. Crear `lib/inmobiliarias/<key>/catalogos.ts` (si aplica)
-2. Crear `lib/inmobiliarias/<key>/schema.ts` con `getFieldSchema()`
-3. Añadir entrada en `INMOBILIARIAS` y `getSchema()` en `schemas.ts`
-4. Crear `lib/inmobiliarias/<key>/adapter.ts` con la automatización (Playwright)
-5. Conectar en `app/api/bloquear/route.ts` (ver TODO)
+Para agregar una nueva inmobiliaria (detalle en `DOCUMENTACION.md` §7):
+1. `lib/inmobiliarias/<key>/schema.ts` con `getFieldSchema()` (+ `catalogos.ts` si aplica).
+2. Registrarla en `INMOBILIARIAS[]` y en `getSchema()` de `schemas.ts`, con su `script`.
+3. Crear el script Python en `/scripts` (portal → usar `_browser_comun`; correo → `_email_comun`).
+4. Setear credenciales del portal en Railway. Nace `active: false`; se prueba en pausa y se activa.
 
 ## Pendiente
 
-- [ ] Integrar Playwright en `app/api/bloquear/route.ts` (ver TODO en el archivo)
-- [ ] Crear `lib/inmobiliarias/imagina/adapter.ts` con `run()` real
-- [ ] Soporte multi-inmobiliaria en la navegación (routing / state)
+Ver el roadmap y pendientes actualizados en [`DOCUMENTACION.md`](./DOCUMENTACION.md) §12
+(admin operativo, navegación/buscador, consolidar flags de estado, persistir resultado de jobs,
+canary de portales). Antes: setear `AUTH_SECRET` en Railway ✅ hecho.
