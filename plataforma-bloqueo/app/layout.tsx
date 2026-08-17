@@ -42,12 +42,21 @@ export default async function RootLayout({
   // aquí sólo leemos la sesión para decidir qué renderizar.
   const userEmail = session?.email;
 
+  // Anti-FOUC: fija el tema guardado en <html> ANTES del primer paint, para que
+  // un usuario en modo claro no vea el parpadeo oscuro por defecto.
+  const themeScript =
+    "try{var t=localStorage.getItem('theme');" +
+    "if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}";
+
   return (
     <html
       lang="es"
       className={`${fraunces.variable} ${hankenGrotesk.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="h-full bg-background text-foreground">
         <ThemeProvider>
           <ToastProvider>

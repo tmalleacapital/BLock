@@ -44,6 +44,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ addToast }}>
       {children}
       <div
+        role="status"
+        aria-live="polite"
         className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"
         style={{ maxWidth: '320px' }}
       >
@@ -85,6 +87,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             </div>
             <button
               onClick={() => dismiss(toast.id)}
+              aria-label="Cerrar aviso"
               className="shrink-0 text-xs leading-none hover:opacity-70 transition-opacity"
               style={{ color: 'var(--muted)' }}
             >

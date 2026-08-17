@@ -90,7 +90,7 @@ export default function Sidebar({ isAdmin, mobileOpen = false, onClose }: { isAd
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/logo.svg?v=2"
-          alt="Brekto Client Lock"
+          alt="B-Lock"
           style={{
             width: '100%',
             height: 'auto',
@@ -213,6 +213,7 @@ export default function Sidebar({ isAdmin, mobileOpen = false, onClose }: { isAd
             <ul className="space-y-0.5">
               {INMOBILIARIAS.filter((inm) => inm.active && !inm.paused).map((inm) => {
                 const isActive = inm.key === activeKey;
+                const esCorreo = !!inm.emailRecipients?.length;
                 return (
                   <li key={inm.key}>
                     <Link
@@ -239,6 +240,18 @@ export default function Sidebar({ isAdmin, mobileOpen = false, onClose }: { isAd
                     >
                       <BuildingIcon />
                       <span className="flex-1">{inm.name}</span>
+                      <span
+                        className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                        title={esCorreo ? 'Se bloquea por correo (la inmobiliaria confirma)' : 'Se bloquea directo en el portal'}
+                        style={{
+                          backgroundColor: isActive
+                            ? 'color-mix(in srgb, #ffffff 22%, transparent)'
+                            : 'color-mix(in srgb, var(--border) 55%, transparent)',
+                          color: isActive ? '#ffffff' : 'var(--muted)',
+                        }}
+                      >
+                        {esCorreo ? 'Correo' : 'Portal'}
+                      </span>
                     </Link>
                   </li>
                 );

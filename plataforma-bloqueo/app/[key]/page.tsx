@@ -80,7 +80,9 @@ export default async function InmobiliariaPage({ params }: Props) {
               Bloqueo de cliente
             </h1>
             <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-              Rellena los datos del cliente y presiona &ldquo;Bloquear cliente&rdquo; para registrarlo en el portal.
+              {inm.emailRecipients?.length
+                ? 'Rellena los datos del cliente y presiona “Bloquear cliente” para enviar la solicitud de bloqueo por correo a la inmobiliaria.'
+                : 'Rellena los datos del cliente y presiona “Bloquear cliente” para registrarlo directo en el portal.'}
             </p>
           </div>
         </div>

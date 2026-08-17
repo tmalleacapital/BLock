@@ -230,8 +230,13 @@ function CheckIcon() {
 function Spinner({ size = 4 }: { size?: number }) {
   return (
     <span
-      className={`inline-block w-${size} h-${size} border-2 rounded-full animate-spin`}
-      style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+      className="inline-block border-2 rounded-full animate-spin"
+      style={{
+        width: `${size * 0.25}rem`,
+        height: `${size * 0.25}rem`,
+        borderColor: 'var(--accent)',
+        borderTopColor: 'transparent',
+      }}
     />
   );
 }
@@ -252,6 +257,7 @@ export default function FichaForm({
   const [dupWarning, setDupWarning] = useState(false);
 
   const submitSnapshot = useRef<{ rut: string; nombre: string } | null>(null);
+  const statusRef = useRef<HTMLDivElement | null>(null);
 
   // Claves de campos con máscara de fecha (DD-MM-AAAA).
   const fechaKeys = useMemo(
@@ -392,6 +398,11 @@ export default function FichaForm({
     setJobStatus('queuing');
     setResult(null);
     setJobId(null);
+    // En laptop/móvil el panel de estado queda debajo del formulario: al enviar,
+    // lo traemos a la vista para que el asesor vea el feedback de la cola.
+    requestAnimationFrame(() => {
+      statusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
 
     submitSnapshot.current = {
       rut: values.rut ?? '',
@@ -633,6 +644,7 @@ export default function FichaForm({
       <aside className="w-full xl:w-72 shrink-0 space-y-4">
 
         {/* Estado */}
+        <div ref={statusRef} role="status" aria-live="polite">
         {isSuccess ? (
           <div
             className="rounded-2xl border-2 p-6 flex flex-col items-center text-center gap-3 animate-in fade-in zoom-in-95 duration-300"
@@ -792,6 +804,7 @@ export default function FichaForm({
             )}
           </div>
         )}
+        </div>
 
         {/* Vista previa del correo */}
         {emailPreview && (

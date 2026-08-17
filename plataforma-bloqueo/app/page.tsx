@@ -247,7 +247,7 @@ export default function HomePage() {
             style={{ animationDelay: '100ms' }}
           >
             <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-              Portales activos
+              Inmobiliarias
             </p>
             <div
               className="rounded-2xl border overflow-hidden"
@@ -274,6 +274,16 @@ export default function HomePage() {
                   <InmobiliariaInitials name={inm.name} />
                   <span className="flex-1 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
                     {inm.name}
+                  </span>
+                  <span
+                    className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                    title={inm.emailRecipients?.length ? 'Se bloquea por correo (la inmobiliaria confirma)' : 'Se bloquea directo en el portal'}
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--border) 55%, transparent)',
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    {inm.emailRecipients?.length ? 'Correo' : 'Portal'}
                   </span>
                   <PortalStatusBadge stats={queueData.portals[inm.key]} />
                   <span style={{ color: 'var(--muted)' }}>
@@ -324,7 +334,7 @@ export default function HomePage() {
                         </p>
                         <p className="text-xs" style={{ color: s.processing ? 'var(--success)' : 'var(--warning)' }}>
                           {s.processing
-                            ? 'Automatizando...'
+                            ? 'Automatizando…'
                             : `${s.waitingCount} solicitud${s.waitingCount !== 1 ? 'es' : ''} en espera`}
                         </p>
                       </div>

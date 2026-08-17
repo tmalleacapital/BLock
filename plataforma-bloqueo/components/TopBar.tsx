@@ -64,11 +64,11 @@ export default function TopBar({ email, onMenuClick }: { email?: string; onMenuC
           width: '8px',
           height: '8px',
           borderRadius: '50%',
-          backgroundColor: '#4ade80',
-          boxShadow: '0 0 8px #4ade80cc',
+          backgroundColor: 'var(--success)',
+          boxShadow: '0 0 8px color-mix(in srgb, var(--success) 70%, transparent)',
           flexShrink: 0,
         }} />
-        <span style={{ fontSize: '13px', fontWeight: 500, color: '#4ade80' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--success)' }}>
           Sesión activa
         </span>
         {email && (
