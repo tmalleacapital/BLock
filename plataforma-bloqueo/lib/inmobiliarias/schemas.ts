@@ -49,7 +49,9 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'maestra',         name: 'Maestra',         enabled: true, active: true,  script: 'Bloqueo de Clientes Maestra.py' },
   { key: 'norte-verde',     name: 'Norte Verde',     enabled: true, active: false },
   { key: 'paz',             name: 'Paz',             enabled: true, active: true,  emailRecipients: ['issys.ferrer@pazcorp.cl', 'fernando.florindo@pazcorp.cl'], script: 'Bloqueo Clientes Paz.py' },
-  { key: 'sento',           name: 'Sento',           enabled: true, active: true,  script: 'Bloqueo Cliente Sento.py' },
+  // Sento: fuera de servicio (falta habilitar algo del portal) — no se lista en
+  // ningún lado. Se conserva la config para reactivarla con active: true.
+  { key: 'sento',           name: 'Sento',           enabled: true, active: false, script: 'Bloqueo Cliente Sento.py' },
   { key: 'simonetti',       name: 'Simonetti',       enabled: true, active: true,  script: 'Bloqueo Cliente Simonetti.py' },
   { key: 'vicuna-mackenna', name: 'Vicuña Mackenna', enabled: true, active: false },
   { key: 'viva',            name: 'Viva',            enabled: true, active: true,  emailRecipients: ['ventas@iviva.cl'], script: 'Bloqueo Clientes Viva.py' },
