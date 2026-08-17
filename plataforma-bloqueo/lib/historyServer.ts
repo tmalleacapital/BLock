@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import path from 'path';
 import { estaVigente } from './vigencia';
 
-export type BlockingStatus = 'pendiente' | 'aceptado' | 'rechazado';
+export type BlockingStatus = 'pendiente' | 'aceptado' | 'rechazado' | 'liberado';
 
 export interface BlockingRecord {
   id: string;
@@ -90,12 +90,15 @@ export function addRecord(
 
 export function isDuplicate(rut: string, inmobiliariaKey: string): boolean {
   const norm = (r: string) => r.replace(/[.\-]/g, '').toLowerCase();
-  // Solo cuentan los bloqueos que siguen tomando al cliente: un rechazo lo
-  // libera de inmediato y, pasados los 15 días de vigencia, también.
+  // Solo cuentan los bloqueos que siguen tomando al cliente. Lo libera:
+  //  · un rechazo de la inmobiliaria (status 'rechazado'),
+  //  · una liberación manual del admin (status 'liberado'),
+  //  · o el vencimiento de los 15 días de vigencia.
   return getRecords().some(
     (r) => norm(r.rut) === norm(rut)
       && r.inmobiliariaKey === inmobiliariaKey
       && r.status !== 'rechazado'
+      && r.status !== 'liberado'
       && estaVigente(r.fecha),
   );
 }
@@ -115,6 +118,24 @@ export function setStatus(
   const record = records.find(
     (r) => norm(r.rut) === norm(rut) && r.inmobiliariaKey === inmobiliariaKey,
   );
+  if (!record) return undefined;
+  record.status = status;
+  writeToDisk(records);
+  return record;
+}
+
+/**
+ * Cambia el estado de UN registro concreto por su `id` (acción manual del
+ * admin). A diferencia de setStatus(rut, key), no depende de "el más reciente":
+ * en el historial completo puede haber varios bloqueos del mismo RUT+portal.
+ * Devuelve el registro actualizado, o undefined si el id no existe.
+ */
+export function setStatusById(
+  id: string,
+  status: BlockingStatus,
+): BlockingRecord | undefined {
+  const records = getRecords();
+  const record = records.find((r) => r.id === id);
   if (!record) return undefined;
   record.status = status;
   writeToDisk(records);

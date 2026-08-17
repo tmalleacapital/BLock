@@ -3,16 +3,9 @@ import { redirect } from 'next/navigation';
 import { getSession, COOKIE_NAME, isAdmin } from '@/lib/auth';
 import { getAllHistory } from '@/lib/historyServer';
 import ExportButton from './ExportButton';
-import EstadoBadge from '@/components/EstadoBadge';
+import AdminHistorialClient from './AdminHistorialClient';
 
 export const dynamic = 'force-dynamic';
-
-function fmt(iso: string) {
-  return new Date(iso).toLocaleString('es-CL', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
 
 export default async function AdminPage() {
   const cookieStore = await cookies();
@@ -128,69 +121,8 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* History table */}
-      <div
-        className="rounded-2xl border overflow-hidden"
-        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
-      >
-        <div className="px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-          <p className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-            Historial completo
-          </p>
-        </div>
-        {records.length === 0 ? (
-          <p className="px-6 py-10 text-sm text-center" style={{ color: 'var(--muted)' }}>
-            No hay bloqueos registrados todavía.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Fecha', 'RUT', 'Nombre', 'Portal', 'Asesor', 'Estado'].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest"
-                      style={{ color: 'var(--muted)' }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((r, i) => (
-                  <tr
-                    key={r.id}
-                    style={{
-                      borderBottom: i < records.length - 1 ? '1px solid var(--border)' : 'none',
-                    }}
-                  >
-                    <td className="px-4 py-3 tabular-nums text-xs whitespace-nowrap" style={{ color: 'var(--muted)' }}>
-                      {fmt(r.fecha)}
-                    </td>
-                    <td className="px-4 py-3 font-mono font-semibold" style={{ color: 'var(--foreground)' }}>
-                      {r.rut}
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--foreground)' }}>
-                      {r.nombre || '—'}
-                    </td>
-                    <td className="px-4 py-3" style={{ color: 'var(--foreground)' }}>
-                      {r.inmobiliariaName}
-                    </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: 'var(--muted)' }}>
-                      {r.asesorEmail ?? '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <EstadoBadge status={r.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      {/* History table (filtros, búsqueda, paginación y acciones) */}
+      <AdminHistorialClient initial={records} />
     </main>
   );
 }

@@ -63,8 +63,9 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
       if (inmo && r.inmobiliariaName !== inmo) return false;
       if (estado === 'sin' && r.status) return false;
       if (estado && estado !== 'sin' && r.status !== estado) return false;
-      if (vig === 'vigente' && !estaVigente(r.fecha)) return false;
-      if (vig === 'liberado' && estaVigente(r.fecha)) return false;
+      const libre = r.status === 'rechazado' || r.status === 'liberado' || !estaVigente(r.fecha);
+      if (vig === 'vigente' && libre) return false;
+      if (vig === 'liberado' && !libre) return false;
       if (q.trim()) {
         const hay = `${r.rut} ${r.nombre}`.toLowerCase();
         if (!hay.includes(q.trim().toLowerCase())) return false;
@@ -75,7 +76,9 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
   );
 
   const pendientes = records.filter((r) => r.status === 'pendiente').length;
-  const vigentes = records.filter((r) => r.status !== 'rechazado' && estaVigente(r.fecha)).length;
+  const vigentes = records.filter(
+    (r) => r.status !== 'rechazado' && r.status !== 'liberado' && estaVigente(r.fecha),
+  ).length;
   const hayFiltro = Boolean(inmo || estado || vig || q.trim());
 
   return (
@@ -145,6 +148,7 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
           <option value="pendiente">Pendiente</option>
           <option value="aceptado">Aceptado</option>
           <option value="rechazado">Rechazado</option>
+          <option value="liberado">Liberado</option>
           <option value="sin">Sin estado (portal)</option>
         </select>
         <select value={vig} onChange={(e) => setVig(e.target.value)} className={selectCls} style={selectStyle}>
@@ -216,7 +220,7 @@ export default function MisBloqueosClient({ initial }: { initial: BlockingRecord
                     <td className="px-4 py-3 text-xs whitespace-nowrap">
                       {r.status === 'rechazado' ? (
                         <span style={{ color: 'var(--muted)' }}>—</span>
-                      ) : estaVigente(r.fecha) ? (
+                      ) : r.status !== 'liberado' && estaVigente(r.fecha) ? (
                         <span style={{ color: 'var(--success)' }}>
                           {diasRestantes(r.fecha)} día{diasRestantes(r.fecha) !== 1 ? 's' : ''}
                         </span>

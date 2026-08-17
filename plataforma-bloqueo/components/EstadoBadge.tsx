@@ -4,6 +4,7 @@ const MAP: Record<BlockingStatus, { label: string; color: string }> = {
   aceptado:  { label: 'Aceptado',  color: 'var(--success)' },
   rechazado: { label: 'Rechazado', color: 'var(--danger)' },
   pendiente: { label: 'Pendiente', color: 'var(--warning)' },
+  liberado:  { label: 'Liberado',  color: 'var(--muted)' },
 };
 
 export default function EstadoBadge({ status }: { status?: BlockingStatus }) {
