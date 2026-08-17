@@ -449,7 +449,15 @@ export default function FichaForm({
   const fieldMap = Object.fromEntries(schema.fields.map((f) => [f.key, f]));
 
   // Layout de secciones: propio de la inmobiliaria si lo define, si no el default.
-  const groups = schema.groups ?? GROUPS;
+  // Red de seguridad: cualquier campo del schema que no esté en ningún grupo se
+  // agrega a una sección "Datos" al final. Así un campo requerido nunca queda
+  // sin renderizar (lo que dejaría el botón deshabilitado para siempre).
+  const groupsBase = schema.groups ?? GROUPS;
+  const cubiertas = new Set(groupsBase.flatMap((g) => g.keys));
+  const sueltas = schema.fields.filter((f) => !cubiertas.has(f.key)).map((f) => f.key);
+  const groups = sueltas.length > 0
+    ? [...groupsBase, { label: 'Datos', keys: sueltas }]
+    : groupsBase;
 
   // Email preview data (computed when emailRecipients is set)
   const emailPreview = emailRecipients && emailRecipients.length > 0 ? (() => {

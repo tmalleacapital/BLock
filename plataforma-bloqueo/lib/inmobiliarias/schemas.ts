@@ -49,7 +49,8 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'maestra',         name: 'Maestra',         enabled: true, active: true,  script: 'Bloqueo de Clientes Maestra.py' },
   { key: 'norte-verde',     name: 'Norte Verde',     enabled: true, active: false },
   // Paz Corp: por PLATAFORMA (Sistema de Brokers → Registro de leads). En pausa
-  // hasta validar el flujo end-to-end; se activa quitando paused.
+  // para una última validación de la ficha (se corrigió el botón que no
+  // habilitaba); se activa quitando paused.
   { key: 'paz',             name: 'Paz',             enabled: true, active: true,  paused: true, script: 'Bloqueo Clientes Paz.py' },
   // Sento: fuera de servicio (falta habilitar algo del portal) — no se lista en
   // ningún lado. Se conserva la config para reactivarla con active: true.

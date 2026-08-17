@@ -9,6 +9,11 @@ import type { FieldSchema } from '../types';
 export function getFieldSchema(): FieldSchema {
   return {
     inmobiliaria: 'paz',
+    // Layout propio: el default (GROUPS de FichaForm) no incluye 'nombreCompleto',
+    // así que se define aquí para que todos los campos se rendericen juntos.
+    groups: [
+      { label: 'Datos del cliente', keys: ['rut', 'nombreCompleto', 'telefonoCelular', 'proyecto'] },
+    ],
     fields: [
       { key: 'rut',             label: 'RUT',               type: 'rut',   required: true },
       { key: 'nombreCompleto',  label: 'Nombre y apellido', type: 'text',  required: true },
