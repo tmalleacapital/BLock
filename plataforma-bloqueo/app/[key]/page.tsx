@@ -30,6 +30,9 @@ export default async function InmobiliariaPage({ params }: Props) {
     } else if (key === 'ecasa') {
       const { fetchEcasaStock } = await import('@/lib/inmobiliarias/ecasa/stock');
       stockData = await fetchEcasaStock();
+    } else if (key === 'paz') {
+      const { fetchPazStock } = await import('@/lib/inmobiliarias/paz/stock');
+      stockData = await fetchPazStock();
     } else if (key === 'fai') {
       const { fetchFaiStock } = await import('@/lib/inmobiliarias/fai/stock');
       stockData = await fetchFaiStock();

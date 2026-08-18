@@ -48,10 +48,10 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'leben',           name: 'Leben',           enabled: true, active: true,  emailRecipients: ['lsilva@ileben.cl', 'jfoppiano@ileben.cl'], script: 'Bloqueo Cliente Leben.py' },
   { key: 'maestra',         name: 'Maestra',         enabled: true, active: true,  script: 'Bloqueo de Clientes Maestra.py' },
   { key: 'norte-verde',     name: 'Norte Verde',     enabled: true, active: false },
-  // Paz Corp: por PLATAFORMA (Sistema de Brokers → Registro de leads). En pausa
-  // para una última validación de la ficha (se corrigió el botón que no
-  // habilitaba); se activa quitando paused.
-  { key: 'paz',             name: 'Paz',             enabled: true, active: true,  paused: true, script: 'Bloqueo Clientes Paz.py' },
+  // Paz Corp: por CORREO. Se intentó migrar a plataforma pero paz.cl bloquea la
+  // IP de salida de Railway; se revierte al flujo por correo (activo) mientras
+  // Paz resuelve el whitelist de la IP.
+  { key: 'paz',             name: 'Paz',             enabled: true, active: true,  emailRecipients: ['issys.ferrer@pazcorp.cl', 'fernando.florindo@pazcorp.cl'], script: 'Bloqueo Clientes Paz.py' },
   // Sento: fuera de servicio (falta habilitar algo del portal) — no se lista en
   // ningún lado. Se conserva la config para reactivarla con active: true.
   { key: 'sento',           name: 'Sento',           enabled: true, active: false, script: 'Bloqueo Cliente Sento.py' },
