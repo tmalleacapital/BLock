@@ -49,9 +49,8 @@ export const INMOBILIARIAS: InmobiliariaEntry[] = [
   { key: 'maestra',         name: 'Maestra',         enabled: true, active: true,  script: 'Bloqueo de Clientes Maestra.py' },
   { key: 'norte-verde',     name: 'Norte Verde',     enabled: true, active: false },
   // Paz Corp: por PLATAFORMA (Sistema de Brokers → Registro de leads). Paz
-  // whitelisteó las IP de salida de Railway. En pausa para validar el envío
-  // real end-to-end; se activa quitando paused.
-  { key: 'paz',             name: 'Paz',             enabled: true, active: true,  paused: true, script: 'Bloqueo Clientes Paz.py' },
+  // whitelisteó las IP de salida de Railway. Validada end-to-end y ACTIVA.
+  { key: 'paz',             name: 'Paz',             enabled: true, active: true,  script: 'Bloqueo Clientes Paz.py' },
   // Sento: fuera de servicio (falta habilitar algo del portal) — no se lista en
   // ningún lado. Se conserva la config para reactivarla con active: true.
   { key: 'sento',           name: 'Sento',           enabled: true, active: false, script: 'Bloqueo Cliente Sento.py' },
