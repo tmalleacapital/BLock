@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { INMOBILIARIAS } from '@/lib/inmobiliarias/schemas';
 import type { BlockingRecord } from '@/lib/historyServer';
+import { getFavoritos, toggleFavorito, getRecientes } from '@/lib/recientes';
 
 interface PortalStats {
   waitingCount: number;
@@ -98,12 +99,41 @@ function ArrowIcon() {
   );
 }
 
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+    </svg>
+  );
+}
+
 const cardShadow = '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04)';
 
 export default function HomePage() {
   const [history, setHistory] = useState<BlockingRecord[]>([]);
   const [greeting] = useState(() => getGreeting());
   const [queueData, setQueueData] = useState<QueueData>({ portals: {}, totalWaiting: 0 });
+  const [q, setQ] = useState('');
+  const [favoritos, setFavoritos] = useState<string[]>([]);
+  const [recientes, setRecientes] = useState<string[]>([]);
+
+  // Recientes y favoritos viven en localStorage (por navegador) → se leen al montar.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFavoritos(getFavoritos());
+    setRecientes(getRecientes());
+  }, []);
   const pollQueue = useCallback(async () => {
     try {
       const res = await fetch('/api/queue-status');
@@ -139,7 +169,30 @@ export default function HomePage() {
   }, [pollQueue]);
 
   const countToday = history.filter((r) => isToday(r.fecha)).length;
-  const active = INMOBILIARIAS.filter((inm) => inm.active && !inm.paused);
+  const active = useMemo(
+    () => INMOBILIARIAS.filter((inm) => inm.active && !inm.paused),
+    [],
+  );
+  const toggleFav = useCallback((key: string) => setFavoritos(toggleFavorito(key)), []);
+
+  // Lista mostrada: filtrada por búsqueda y con los favoritos arriba.
+  const listadas = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const filtradas = term
+      ? active.filter((inm) => inm.name.toLowerCase().includes(term))
+      : active;
+    const esFav = (k: string) => favoritos.includes(k);
+    return [...filtradas].sort((a, b) => Number(esFav(b.key)) - Number(esFav(a.key)));
+  }, [active, q, favoritos]);
+
+  // Chips de acceso rápido: últimas usadas (que sigan activas), solo sin búsqueda.
+  const recientesActivas = useMemo(
+    () => recientes
+      .map((k) => active.find((inm) => inm.key === k))
+      .filter((inm): inm is (typeof active)[number] => Boolean(inm))
+      .slice(0, 5),
+    [recientes, active],
+  );
 
   const activeQueuePortals = active.filter((inm) => {
     const s = queueData.portals[inm.key];
@@ -246,51 +299,111 @@ export default function HomePage() {
             className="animate-in fade-in slide-in-from-bottom-2 duration-300"
             style={{ animationDelay: '100ms' }}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
-              Inmobiliarias
-            </p>
+            {/* Encabezado + buscador */}
+            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: 'var(--muted)' }}>
+                Inmobiliarias
+              </p>
+              <div className="relative w-full sm:w-64">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--muted)' }}>
+                  <SearchIcon />
+                </span>
+                <input
+                  type="text"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Buscar inmobiliaria…"
+                  aria-label="Buscar inmobiliaria"
+                  className="w-full rounded-lg border pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 placeholder:text-[color:var(--muted)]"
+                  style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', color: 'var(--foreground)' }}
+                />
+              </div>
+            </div>
+
+            {/* Recientes — acceso rápido a las últimas usadas */}
+            {!q.trim() && recientesActivas.length > 0 && (
+              <div className="mb-3">
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>
+                  Recientes
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {recientesActivas.map((inm) => (
+                    <Link
+                      key={inm.key}
+                      href={`/${inm.key}`}
+                      className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors"
+                      style={{ borderColor: 'var(--border)', color: 'var(--foreground)', textDecoration: 'none' }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'color-mix(in srgb, var(--accent) 8%, transparent)'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'transparent'; }}
+                    >
+                      <InmobiliariaInitials name={inm.name} />
+                      {inm.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div
               className="rounded-2xl border overflow-hidden"
               style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)', boxShadow: cardShadow }}
             >
-              {active.map((inm, idx) => (
-                <Link
-                  key={inm.key}
-                  href={`/${inm.key}`}
-                  className="flex items-center gap-4 px-5 py-4 transition-colors duration-150"
-                  style={{
-                    borderTop: idx > 0 ? `1px solid var(--border)` : undefined,
-                    color: 'inherit',
-                    textDecoration: 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor =
-                      'color-mix(in srgb, var(--accent) 4%, transparent)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <InmobiliariaInitials name={inm.name} />
-                  <span className="flex-1 text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-                    {inm.name}
-                  </span>
-                  <span
-                    className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
-                    title={inm.emailRecipients?.length ? 'Se bloquea por correo (la inmobiliaria confirma)' : 'Se bloquea directo en el portal'}
-                    style={{
-                      backgroundColor: 'color-mix(in srgb, var(--border) 55%, transparent)',
-                      color: 'var(--muted)',
-                    }}
+              {listadas.length === 0 ? (
+                <p className="px-5 py-8 text-sm text-center" style={{ color: 'var(--muted)' }}>
+                  Ninguna inmobiliaria coincide con «{q.trim()}».
+                </p>
+              ) : listadas.map((inm, idx) => {
+                const fav = favoritos.includes(inm.key);
+                return (
+                  <div
+                    key={inm.key}
+                    className="flex items-stretch"
+                    style={{ borderTop: idx > 0 ? '1px solid var(--border)' : undefined }}
                   >
-                    {inm.emailRecipients?.length ? 'Correo' : 'Portal'}
-                  </span>
-                  <PortalStatusBadge stats={queueData.portals[inm.key]} />
-                  <span style={{ color: 'var(--muted)' }}>
-                    <ArrowIcon />
-                  </span>
-                </Link>
-              ))}
+                    <Link
+                      href={`/${inm.key}`}
+                      className="flex items-center gap-4 px-5 py-4 flex-1 min-w-0 transition-colors duration-150"
+                      style={{ color: 'inherit', textDecoration: 'none' }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLAnchorElement).style.backgroundColor =
+                          'color-mix(in srgb, var(--accent) 4%, transparent)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLAnchorElement).style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <InmobiliariaInitials name={inm.name} />
+                      <span className="flex-1 text-sm font-semibold truncate" style={{ color: 'var(--foreground)' }}>
+                        {inm.name}
+                      </span>
+                      <span
+                        className="shrink-0 text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                        title={inm.emailRecipients?.length ? 'Se bloquea por correo (la inmobiliaria confirma)' : 'Se bloquea directo en el portal'}
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--border) 55%, transparent)',
+                          color: 'var(--muted)',
+                        }}
+                      >
+                        {inm.emailRecipients?.length ? 'Correo' : 'Portal'}
+                      </span>
+                      <PortalStatusBadge stats={queueData.portals[inm.key]} />
+                      <span style={{ color: 'var(--muted)' }}>
+                        <ArrowIcon />
+                      </span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => toggleFav(inm.key)}
+                      aria-label={fav ? `Quitar ${inm.name} de favoritos` : `Marcar ${inm.name} como favorito`}
+                      aria-pressed={fav}
+                      className="shrink-0 flex items-center px-4 transition-colors"
+                      style={{ color: fav ? 'var(--warning)' : 'var(--muted)' }}
+                    >
+                      <StarIcon filled={fav} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </section>
 

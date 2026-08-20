@@ -5,6 +5,7 @@ import type { FieldDef, FieldSchema, RunResult, UnidadEntry } from '@/lib/inmobi
 import { savePendingJob, claimPendingJob } from '@/lib/pendingJobs';
 import { validarRut } from '@/lib/rut';
 import { DIAS_BLOQUEO } from '@/lib/vigencia';
+import { pushReciente } from '@/lib/recientes';
 
 interface FichaFormProps {
   inmobiliariaKey: string;
@@ -258,6 +259,12 @@ export default function FichaForm({
 
   const submitSnapshot = useRef<{ rut: string; nombre: string } | null>(null);
   const statusRef = useRef<HTMLDivElement | null>(null);
+
+  // Registrar la inmobiliaria como "reciente" al abrirla (para el acceso rápido
+  // del inicio). Es una preferencia por navegador (localStorage).
+  useEffect(() => {
+    pushReciente(inmobiliariaKey);
+  }, [inmobiliariaKey]);
 
   // Claves de campos con máscara de fecha (DD-MM-AAAA).
   const fechaKeys = useMemo(
